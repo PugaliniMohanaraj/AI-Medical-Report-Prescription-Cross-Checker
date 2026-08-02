@@ -174,17 +174,6 @@ pip install -r backend/requirements-ai.txt
 
 `render.yaml` blueprint is included as a starting point.
 
-## Planned features (next phases)
-
-1. ~~Multi-PDF upload & storage~~
-2. ~~PyMuPDF text extraction (+ OCR fallback)~~
-3. ~~AI structured medical extraction (OpenAI / local Llama)~~
-4. Patient timeline merge  
-5. ~~Duplicate / dosage / allergy / interaction detection~~
-6. ~~Lab trend analytics (+ graphs / AI explanations)~~
-7. ~~RAG pipeline + confidence scores~~
-8. Interactive Recharts dashboard  
-
 ### OCR note
 
 Scanned/image-only pages use PyMuPDF's Tesseract integration (`page.get_textpage_ocr`).
