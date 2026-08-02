@@ -1,0 +1,12 @@
+# AI / RAG stack — install after core requirements
+# Prefer Python 3.11 or 3.12. On Windows, Visual C++ Build Tools may be required for chroma-hnswlib.
+# Linux (Docker / Render) typically has prebuilt wheels.
+
+-r requirements.txt
+
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-openai==0.3.0
+langchain-chroma==0.2.0
+chromadb==0.5.23
+sentence-transformers==3.3.1

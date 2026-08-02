@@ -1,0 +1,28 @@
+# Core API stack (installs cleanly on Windows without C++ build tools)
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Validation & settings
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# PDF
+PyMuPDF==1.25.1
+
+# HTTP / utils
+httpx==0.28.1
+python-dotenv==1.0.1
+aiofiles==24.1.0
+
+# Database
+sqlalchemy==2.0.36
+aiosqlite==0.20.0
+
+# Lightweight LangChain pieces used by RAG chunking
+langchain-core==0.3.29
+langchain-text-splitters==0.3.5
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
