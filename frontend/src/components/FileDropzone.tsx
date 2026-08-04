@@ -73,17 +73,17 @@ export function FileDropzone({ disabled = false, onFilesSelected }: FileDropzone
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf,.pdf"
+        accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp,image/gif,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.gif"
         multiple
         className="hidden"
         disabled={disabled}
         onChange={onChange}
       />
       <p className="font-display text-xl font-semibold text-surface-900 dark:text-surface-50">
-        {isDragging ? "Drop PDFs here" : "Drag & drop PDF reports"}
+        {isDragging ? "Drop files here" : "Drag & drop reports"}
       </p>
       <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">
-        or click to browse — multiple files supported
+        PDF or images (PNG, JPG, WEBP, TIFF, BMP, GIF) — multiple files supported
       </p>
     </div>
   );

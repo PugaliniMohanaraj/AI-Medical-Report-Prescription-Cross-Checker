@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { IconBell, IconMenu, IconSearch } from "@/components/ui/Icons";
 import { useHealthCheck } from "@/hooks/useHealthCheck";
-import { demoPatient } from "@/data/demoPatient";
+import { usePatient } from "@/hooks/usePatient";
 import { cn } from "@/utils/cn";
 
 function greetingForNow() {
@@ -22,14 +22,17 @@ const pageCaptions: Record<string, string> = {
   "/warnings": "Prioritized prescription and allergy alerts.",
   "/chat": "Ask follow-up questions with cited sources.",
   "/settings": "Appearance, API status, and workspace preferences.",
-  "/uploads": "Ingest multi-PDF medical reports securely.",
+  "/uploads": "Ingest PDF and image medical reports securely.",
 };
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { health } = useHealthCheck();
+  const { overview } = usePatient();
   const location = useLocation();
-  const firstName = demoPatient.name.split(" ")[0];
+  const patientName = overview?.patient_name || "Patient";
+  const firstName = patientName.split(" ")[0] || "Patient";
+  const patientId = overview?.patient_id || "—";
   const caption = useMemo(
     () => pageCaptions[location.pathname] ?? "Clinical report & prescription cross-checker.",
     [location.pathname],
@@ -105,8 +108,8 @@ export function AppShell() {
                       {firstName.slice(0, 1)}
                     </div>
                     <div className="hidden sm:block">
-                      <p className="text-xs font-semibold leading-tight">{demoPatient.name}</p>
-                      <p className="text-[10px] text-surface-500">{demoPatient.mrn}</p>
+                      <p className="text-xs font-semibold leading-tight">{patientName}</p>
+                      <p className="text-[10px] text-surface-500">{patientId}</p>
                     </div>
                   </div>
                 </div>

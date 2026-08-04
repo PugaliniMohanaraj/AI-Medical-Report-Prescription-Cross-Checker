@@ -1,28 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getErrorMessage } from "@/api/client";
-import { deleteUpload, listUploads, uploadPdfs } from "@/api/endpoints";
+import { deleteUpload, listUploads, uploadFiles } from "@/api/endpoints";
 import { FileDropzone } from "@/components/FileDropzone";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { QueuedFileList, StoredUploadsList } from "@/components/UploadFileLists";
 import { UploadProgressBar } from "@/components/UploadProgressBar";
-import type { UploadedFileInfo } from "@/types/api";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { usePatient } from "@/hooks/usePatient";
+import type { ProcessUploadsResponse, UploadedFileInfo } from "@/types/api";
 import {
   MAX_UPLOAD_FILES,
   MAX_UPLOAD_SIZE_MB,
-  validatePdfFiles,
+  validateUploadFiles,
 } from "@/utils/upload";
 
 export function UploadPage() {
+  const { analyzeUploads, analyzing } = usePatient();
   const [queued, setQueued] = useState<File[]>([]);
   const [stored, setStored] = useState<UploadedFileInfo[]>([]);
   const [clientErrors, setClientErrors] = useState<string[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [processResult, setProcessResult] = useState<ProcessUploadsResponse | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const busy = uploading || analyzing;
 
   const refreshStored = useCallback(async () => {
     setLoadingList(true);
@@ -43,7 +50,8 @@ export function UploadPage() {
   const onFilesSelected = (incoming: File[]) => {
     setServerError(null);
     setSuccessMessage(null);
-    const { accepted, errors } = validatePdfFiles(incoming, queued);
+    setProcessResult(null);
+    const { accepted, errors } = validateUploadFiles(incoming, queued);
     setClientErrors(errors);
     if (accepted.length > 0) {
       setQueued((prev) => [...prev, ...accepted]);
@@ -51,16 +59,17 @@ export function UploadPage() {
   };
 
   const onUpload = async () => {
-    if (queued.length === 0 || uploading) return;
+    if (queued.length === 0 || busy) return;
 
     setUploading(true);
     setProgress(0);
     setServerError(null);
     setSuccessMessage(null);
+    setProcessResult(null);
     setClientErrors([]);
 
     try {
-      const result = await uploadPdfs(queued, (event) => {
+      const result = await uploadFiles(queued, (event) => {
         if (!event.total) {
           setProgress(0);
           return;
@@ -69,13 +78,30 @@ export function UploadPage() {
       });
       setProgress(100);
       setQueued([]);
-      setSuccessMessage(result.message);
+      setSuccessMessage(`${result.message} Starting AI analysis…`);
       await refreshStored();
+
+      const fileIds = result.files.map((file) => file.file_id);
+      const analysis = await analyzeUploads(fileIds);
+      setProcessResult(analysis);
+      setSuccessMessage(analysis.message);
     } catch (error) {
       setServerError(getErrorMessage(error));
       setProgress(0);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const onAnalyzeExisting = async () => {
+    setServerError(null);
+    setProcessResult(null);
+    try {
+      const analysis = await analyzeUploads();
+      setProcessResult(analysis);
+      setSuccessMessage(analysis.message);
+    } catch (error) {
+      setServerError(getErrorMessage(error));
     }
   };
 
@@ -97,13 +123,15 @@ export function UploadPage() {
     <section className="space-y-6">
       <PageHeader
         title="Uploads"
-        description="Upload multiple PDF medical reports and prescriptions. Files are validated, stored, and tracked in metadata."
+        description="Upload medical reports, then the AI extracts medicines, labs, and dates into your patient timeline."
       />
       <p className="text-xs text-surface-500">
-        Limits: up to {MAX_UPLOAD_FILES} PDFs · {MAX_UPLOAD_SIZE_MB} MB each
+        Limits: up to {MAX_UPLOAD_FILES} files · {MAX_UPLOAD_SIZE_MB} MB each · PDF, PNG, JPG, WEBP, TIFF, BMP, GIF
       </p>
 
-      <FileDropzone disabled={uploading} onFilesSelected={onFilesSelected} />
+      <MedicalDisclaimer text={processResult?.disclaimer} />
+
+      <FileDropzone disabled={busy} onFilesSelected={onFilesSelected} />
 
       {(clientErrors.length > 0 || serverError) && (
         <div
@@ -124,33 +152,78 @@ export function UploadPage() {
       {successMessage && (
         <div
           role="status"
-          className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-100"
+          className="rounded-xl border border-brand-500/30 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700 dark:border-brand-500/50 dark:bg-brand-900 dark:text-brand-100"
         >
           {successMessage}
         </div>
       )}
 
+      {processResult && (
+        <div className="rounded-xl border border-surface-200 bg-white/80 px-4 py-3 text-sm dark:border-surface-700 dark:bg-surface-900/70">
+          <p className="font-medium">
+            Analysis complete — {processResult.processed} processed
+            {processResult.failed ? `, ${processResult.failed} failed` : ""}
+            {processResult.skipped ? `, ${processResult.skipped} skipped` : ""}.
+          </p>
+          <ul className="mt-2 space-y-1 text-surface-600 dark:text-surface-300">
+            {processResult.results.map((item) => (
+              <li key={item.file_id}>
+                {item.filename}: {item.status}
+                {item.error ? ` — ${item.error}` : ""}
+                {item.status === "completed"
+                  ? ` (${item.medicines_count} meds, ${item.labs_count} labs)`
+                  : ""}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link to="/dashboard" className="btn-primary">
+              Open dashboard
+            </Link>
+            <Link to="/timeline" className="btn-secondary">
+              View timeline
+            </Link>
+            <Link to="/chat" className="btn-secondary">
+              Ask follow-up questions
+            </Link>
+          </div>
+        </div>
+      )}
+
       <QueuedFileList
         files={queued}
-        disabled={uploading}
+        disabled={busy}
         onRemove={(index) => setQueued((prev) => prev.filter((_, i) => i !== index))}
         onClear={() => setQueued([])}
       />
 
-      {uploading && <UploadProgressBar progress={progress} label="Uploading PDFs…" />}
+      {uploading && <UploadProgressBar progress={progress} label="Uploading files…" />}
+      {analyzing && <UploadProgressBar progress={70} label="AI analyzing reports… this can take a minute" />}
 
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          disabled={queued.length === 0 || uploading}
+          disabled={queued.length === 0 || busy}
           onClick={() => void onUpload()}
           className="btn-primary"
         >
-          {uploading ? "Uploading…" : `Upload ${queued.length || ""} PDF${queued.length === 1 ? "" : "s"}`.trim()}
+          {uploading
+            ? "Uploading…"
+            : analyzing
+              ? "Analyzing…"
+              : `Upload & analyze ${queued.length || ""} file${queued.length === 1 ? "" : "s"}`.trim()}
         </button>
         <button
           type="button"
-          disabled={loadingList || uploading}
+          disabled={busy || stored.length === 0}
+          onClick={() => void onAnalyzeExisting()}
+          className="btn-secondary"
+        >
+          Analyze stored uploads
+        </button>
+        <button
+          type="button"
+          disabled={loadingList || busy}
           onClick={() => void refreshStored()}
           className="btn-secondary"
         >

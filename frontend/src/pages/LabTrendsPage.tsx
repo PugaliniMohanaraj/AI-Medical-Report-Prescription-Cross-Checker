@@ -1,27 +1,39 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { getErrorMessage } from "@/api/client";
 import { analyzeLabTrends } from "@/api/endpoints";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { LabTrendChart } from "@/components/LabTrendChart";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { demoLabVisits, demoPatient } from "@/data/demoPatient";
+import { usePatient } from "@/hooks/usePatient";
 import type { LabTrendResponse } from "@/types/api";
 import { cn } from "@/utils/cn";
 
 export function LabTrendsPage() {
+  const { overview, loading: patientLoading } = usePatient();
   const [result, setResult] = useState<LabTrendResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
+    if (overview?.lab_trends) {
+      setResult(overview.lab_trends);
+      setError(null);
+      return;
+    }
+    if (!overview?.lab_visits?.length) {
+      setResult(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const data = await analyzeLabTrends({
-        patient_id: demoPatient.id,
-        visits: demoLabVisits,
+        patient_id: overview.patient_id,
+        visits: overview.lab_visits,
         include_ai_explanation: true,
       });
       setResult(data);
@@ -34,14 +46,17 @@ export function LabTrendsPage() {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    if (!patientLoading) {
+      void load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientLoading, overview?.patient_id, overview?.lab_visits?.length]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Lab Trends"
-        description="Compare markers across visits, highlight abnormal trajectories, and review AI explanations."
+        description="Compare markers across uploaded visits, highlight abnormal trajectories, and review AI explanations."
         actions={
           <button type="button" className="btn-primary" disabled={loading} onClick={() => void load()}>
             {loading ? "Refreshing…" : "Refresh analysis"}
@@ -49,10 +64,23 @@ export function LabTrendsPage() {
         }
       />
 
+      <MedicalDisclaimer text={overview?.disclaimer} />
+
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
           {error}
         </div>
+      )}
+
+      {!overview?.lab_visits?.length && !loading && (
+        <Panel>
+          <p className="text-sm text-surface-500">
+            No lab results extracted yet. Upload multi-visit reports to track trends.
+          </p>
+          <Link to="/uploads" className="btn-primary mt-4 inline-flex">
+            Go to uploads
+          </Link>
+        </Panel>
       )}
 
       {result && (

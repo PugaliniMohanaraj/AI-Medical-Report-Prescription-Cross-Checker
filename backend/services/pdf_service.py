@@ -1,11 +1,17 @@
-"""Reusable PDF text extraction via PyMuPDF with OCR fallback."""
+"""Reusable document text extraction via PyMuPDF with OCR fallback.
+
+Supports PDFs and common image formats (PNG, JPEG, WEBP, TIFF, BMP, GIF).
+Images and scanned PDFs are OCR'd via RapidOCR (bundled) and/or Tesseract.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -15,6 +21,17 @@ from backend.utils.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp", ".gif"}
+
+_DEFAULT_TESSDATA_CANDIDATES = (
+    r"C:\Program Files\Tesseract-OCR\tessdata",
+    r"C:\Program Files (x86)\Tesseract-OCR\tessdata",
+    "/usr/share/tesseract-ocr/5/tessdata",
+    "/usr/share/tesseract-ocr/4.00/tessdata",
+    "/usr/share/tessdata",
+    "/opt/homebrew/share/tessdata",
+)
+
 
 class ExtractionMethod(str, Enum):
     TEXT = "text"
@@ -23,12 +40,12 @@ class ExtractionMethod(str, Enum):
 
 
 class PdfExtractionError(Exception):
-    """Raised when a PDF cannot be opened or processed."""
+    """Raised when a document cannot be opened or processed."""
 
 
 @dataclass(slots=True)
 class ExtractedPage:
-    """Text extracted from a single PDF page."""
+    """Text extracted from a single PDF/image page."""
 
     page_number: int
     text: str
@@ -66,14 +83,37 @@ class PdfExtractionResult:
         }
 
 
+@lru_cache(maxsize=1)
+def _get_rapid_ocr():
+    try:
+        from rapidocr_onnxruntime import RapidOCR
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "rapidocr-onnxruntime is not installed. "
+            "Run: pip install rapidocr-onnxruntime onnxruntime"
+        ) from exc
+    return RapidOCR()
+
+
+def discover_tessdata_path(configured: str | None = None) -> str | None:
+    if configured and Path(configured).is_dir():
+        return configured
+    env = (os.environ.get("TESSDATA_PREFIX") or os.environ.get("TESSDATA_PATH") or "").strip()
+    if env and Path(env).is_dir():
+        return env
+    for candidate in _DEFAULT_TESSDATA_CANDIDATES:
+        if Path(candidate).is_dir():
+            return candidate
+    return None
+
+
 class PdfService:
     """
-    Extract text from PDF files using PyMuPDF.
+    Extract text from PDF and image files using PyMuPDF + OCR.
 
-    Strategy per page:
-      1. Try selectable text via ``page.get_text()``.
-      2. If the page has no usable selectable text, OCR via ``page.get_textpage_ocr()``.
-      3. If OCR is disabled/unavailable, record an empty page with a warning.
+    Strategy:
+      1. Images → RapidOCR directly on the file.
+      2. PDF pages → selectable text first, then Tesseract via PyMuPDF, then RapidOCR on pixmap.
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
@@ -82,36 +122,106 @@ class PdfService:
         self.ocr_enabled = self.settings.ocr_enabled
         self.ocr_language = self.settings.ocr_language
         self.ocr_dpi = self.settings.ocr_dpi
-        self.tessdata_path = (self.settings.tessdata_path or "").strip() or None
+        self.tessdata_path = discover_tessdata_path(
+            (self.settings.tessdata_path or "").strip() or None
+        )
 
     async def extract(self, file_path: str | Path) -> PdfExtractionResult:
-        """Async wrapper — runs blocking PyMuPDF work in a thread."""
+        """Async wrapper — runs blocking PyMuPDF/OCR work in a thread."""
         return await asyncio.to_thread(self.extract_sync, file_path)
 
     def extract_sync(self, file_path: str | Path) -> PdfExtractionResult:
-        """Synchronously extract text from every page of a PDF."""
+        """Synchronously extract text from a PDF or image file."""
         path = Path(file_path)
         if not path.exists():
-            raise PdfExtractionError(f"PDF not found: {path}")
+            raise PdfExtractionError(f"File not found: {path}")
         if not path.is_file():
             raise PdfExtractionError(f"Not a file: {path}")
 
+        suffix = path.suffix.lower()
+        if suffix in IMAGE_EXTENSIONS:
+            return self._extract_image(path)
+
+        return self._extract_pdf(path)
+
+    def _extract_image(self, path: Path) -> PdfExtractionResult:
+        if not self.ocr_enabled:
+            return PdfExtractionResult(
+                source_path=str(path.resolve()),
+                page_count=1,
+                pages=[
+                    ExtractedPage(
+                        page_number=1,
+                        text="",
+                        method=ExtractionMethod.EMPTY.value,
+                        char_count=0,
+                        warning="OCR is disabled.",
+                    )
+                ],
+                metadata={"source_kind": "image", "ocr_engine": None},
+            )
+
+        text = ""
+        warning = None
+        engine_used = "rapidocr"
+        try:
+            text = self._rapid_ocr_file(path)
+        except Exception as exc:
+            logger.warning("RapidOCR failed for image %s: %s", path.name, exc)
+            warning = f"RapidOCR failed: {exc}"
+            # Fall back to PyMuPDF + Tesseract if available.
+            try:
+                document = pymupdf.open(path)
+                try:
+                    page = document.load_page(0)
+                    text = self._ocr_page_tesseract(page)
+                    engine_used = "tesseract"
+                    warning = None
+                finally:
+                    document.close()
+            except Exception as tess_exc:
+                warning = f"{warning}; Tesseract fallback failed: {tess_exc}"
+
+        method = ExtractionMethod.OCR if self._has_usable_text(text) else ExtractionMethod.EMPTY
+        page = ExtractedPage(
+            page_number=1,
+            text=text.strip(),
+            method=method.value,
+            char_count=len(text.strip()),
+            warning=None if method == ExtractionMethod.OCR else (warning or "OCR returned no content."),
+        )
+        return PdfExtractionResult(
+            source_path=str(path.resolve()),
+            page_count=1,
+            pages=[page],
+            full_text=page.text,
+            ocr_page_numbers=[1] if method == ExtractionMethod.OCR else [],
+            empty_page_numbers=[1] if method == ExtractionMethod.EMPTY else [],
+            metadata={
+                "source_kind": "image",
+                "ocr_engine": engine_used if method == ExtractionMethod.OCR else None,
+                "tessdata_path": self.tessdata_path,
+            },
+        )
+
+    def _extract_pdf(self, path: Path) -> PdfExtractionResult:
         try:
             document = pymupdf.open(path)
-        except Exception as exc:  # pymupdf raises various errors for corrupt files
-            raise PdfExtractionError(f"Unable to open PDF: {path}") from exc
+        except Exception as exc:
+            raise PdfExtractionError(f"Unable to open file: {path}") from exc
 
         try:
             pages: list[ExtractedPage] = []
             for index in range(document.page_count):
                 page = document.load_page(index)
-                pages.append(self._extract_page(page, page_number=index + 1))
+                pages.append(self._extract_pdf_page(page, page_number=index + 1))
 
-            full_text = "\n\n".join(
-                page.text for page in pages if page.text.strip()
-            ).strip()
+            full_text = "\n\n".join(page.text for page in pages if page.text.strip()).strip()
+            metadata = self._document_metadata(document)
+            metadata["source_kind"] = "pdf"
+            metadata["tessdata_path"] = self.tessdata_path
 
-            result = PdfExtractionResult(
+            return PdfExtractionResult(
                 source_path=str(path.resolve()),
                 page_count=document.page_count,
                 pages=pages,
@@ -119,9 +229,8 @@ class PdfService:
                 ocr_page_numbers=[p.page_number for p in pages if p.method == "ocr"],
                 text_page_numbers=[p.page_number for p in pages if p.method == "text"],
                 empty_page_numbers=[p.page_number for p in pages if p.method == "empty"],
-                metadata=self._document_metadata(document),
+                metadata=metadata,
             )
-            return result
         finally:
             document.close()
 
@@ -135,9 +244,8 @@ class PdfService:
         result = await self.extract(file_path)
         return [page.text for page in result.pages]
 
-    def _extract_page(self, page: pymupdf.Page, page_number: int) -> ExtractedPage:
+    def _extract_pdf_page(self, page: pymupdf.Page, page_number: int) -> ExtractedPage:
         native = (page.get_text("text") or "").strip()
-
         if self._has_usable_text(native):
             return ExtractedPage(
                 page_number=page_number,
@@ -155,17 +263,21 @@ class PdfService:
                 warning="No selectable text and OCR is disabled.",
             )
 
+        warnings: list[str] = []
+        ocr_text = ""
+
         try:
-            ocr_text = self._ocr_page(page)
+            ocr_text = self._ocr_page_tesseract(page)
         except Exception as exc:
-            logger.warning("OCR failed on page %s: %s", page_number, exc)
-            return ExtractedPage(
-                page_number=page_number,
-                text="",
-                method=ExtractionMethod.EMPTY.value,
-                char_count=0,
-                warning=f"OCR failed: {exc}",
-            )
+            logger.warning("Tesseract OCR failed on page %s: %s", page_number, exc)
+            warnings.append(f"Tesseract: {exc}")
+
+        if not self._has_usable_text(ocr_text):
+            try:
+                ocr_text = self._rapid_ocr_pixmap(page)
+            except Exception as exc:
+                logger.warning("RapidOCR failed on page %s: %s", page_number, exc)
+                warnings.append(f"RapidOCR: {exc}")
 
         if self._has_usable_text(ocr_text):
             return ExtractedPage(
@@ -180,16 +292,10 @@ class PdfService:
             text="",
             method=ExtractionMethod.EMPTY.value,
             char_count=0,
-            warning="No selectable text and OCR returned no content.",
+            warning="; ".join(warnings) if warnings else "OCR returned no content.",
         )
 
-    def _ocr_page(self, page: pymupdf.Page) -> str:
-        """
-        OCR a page using PyMuPDF's Tesseract integration.
-
-        Requires Tesseract language data (tessdata). Configure via
-        ``TESSDATA_PATH`` / ``OCR_LANGUAGE`` settings when auto-discovery fails.
-        """
+    def _ocr_page_tesseract(self, page: pymupdf.Page) -> str:
         kwargs: dict[str, Any] = {
             "language": self.ocr_language,
             "dpi": self.ocr_dpi,
@@ -198,8 +304,31 @@ class PdfService:
         if self.tessdata_path:
             kwargs["tessdata"] = self.tessdata_path
 
+        # Ensure tesseract binary can be found on Windows installs.
+        tess_bin = Path(r"C:\Program Files\Tesseract-OCR")
+        if tess_bin.is_dir():
+            os.environ["PATH"] = str(tess_bin) + os.pathsep + os.environ.get("PATH", "")
+
         textpage = page.get_textpage_ocr(**kwargs)
         return page.get_text("text", textpage=textpage) or ""
+
+    def _rapid_ocr_file(self, path: Path) -> str:
+        engine = _get_rapid_ocr()
+        result, _elapse = engine(str(path))
+        if not result:
+            return ""
+        return "\n".join(str(line[1]).strip() for line in result if line and line[1]).strip()
+
+    def _rapid_ocr_pixmap(self, page: pymupdf.Page) -> str:
+        scale = max(self.ocr_dpi / 72.0, 1.0)
+        matrix = pymupdf.Matrix(scale, scale)
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        png_bytes = pix.tobytes("png")
+        engine = _get_rapid_ocr()
+        result, _elapse = engine(png_bytes)
+        if not result:
+            return ""
+        return "\n".join(str(line[1]).strip() for line in result if line and line[1]).strip()
 
     def _has_usable_text(self, text: str) -> bool:
         return len(text.strip()) >= self.min_text_chars
