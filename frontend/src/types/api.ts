@@ -192,3 +192,82 @@ export interface LabTrendResponse {
   confidence: ConfidenceScore;
   llm_provider?: string | null;
 }
+
+export interface MedicineExtraction {
+  name?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+  duration?: string | null;
+}
+
+export interface LabResultExtraction {
+  test_name?: string | null;
+  value?: string | null;
+  unit?: string | null;
+  reference_range?: string | null;
+  status?: string | null;
+}
+
+export interface TimelineVisitView {
+  id: string;
+  date: string;
+  type: string;
+  summary: string;
+  diagnosis: string[];
+  medicines: MedicineExtraction[];
+  labs: LabResultExtraction[];
+  allergies: string[];
+  hospital?: string | null;
+  doctor?: string | null;
+  source_file_id?: string | null;
+  source_filename?: string | null;
+  confidence?: ConfidenceScore | null;
+}
+
+export interface ProcessFileResult {
+  file_id: string;
+  filename: string;
+  status: string;
+  visit_id?: string | null;
+  visit_date?: string | null;
+  patient_name?: string | null;
+  confidence?: ConfidenceScore | null;
+  error?: string | null;
+  medicines_count: number;
+  labs_count: number;
+}
+
+export interface ProcessUploadsRequest {
+  file_ids?: string[];
+  patient_id?: string | null;
+  ingest_rag?: boolean;
+}
+
+export interface ProcessUploadsResponse {
+  patient_id: string;
+  processed: number;
+  failed: number;
+  skipped: number;
+  results: ProcessFileResult[];
+  rag_chunks_indexed: number;
+  message: string;
+  disclaimer: string;
+}
+
+export interface PatientOverviewResponse {
+  patient_id: string;
+  patient_name?: string | null;
+  hospital?: string | null;
+  doctor?: string | null;
+  allergies: string[];
+  primary_diagnosis?: string | null;
+  visit_count: number;
+  visits: TimelineVisitView[];
+  medicines: MedicineExtraction[];
+  lab_visits: LabVisitInput[];
+  findings: ConflictFinding[];
+  lab_trends?: LabTrendResponse | null;
+  has_uploads: boolean;
+  has_extractions: boolean;
+  disclaimer: string;
+}

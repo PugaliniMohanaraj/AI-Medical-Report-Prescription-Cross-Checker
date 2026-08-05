@@ -1,4 +1,4 @@
-"""PDF upload routes."""
+"""Upload routes for PDFs and images."""
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,12 +17,15 @@ def get_upload_service(settings: Settings = Depends(get_app_settings)) -> Upload
 
 
 @router.post("", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
-async def upload_pdfs(
-    files: list[UploadFile] = File(..., description="One or more PDF files"),
+async def upload_files(
+    files: list[UploadFile] = File(
+        ...,
+        description="One or more PDF or image files (png, jpg, jpeg, webp, tiff, bmp, gif)",
+    ),
     db: AsyncSession = Depends(get_db),
     service: UploadService = Depends(get_upload_service),
 ) -> UploadResponse:
-    """Accept and store one or more PDF uploads."""
+    """Accept and store one or more PDF or image uploads."""
     try:
         saved = await service.save_uploads(files, db)
     except UploadValidationError as exc:
@@ -48,7 +51,7 @@ async def list_uploads(
     db: AsyncSession = Depends(get_db),
     service: UploadService = Depends(get_upload_service),
 ) -> UploadListResponse:
-    """List previously uploaded PDF metadata."""
+    """List previously uploaded file metadata."""
     files = await service.list_uploads(db)
     return UploadListResponse(files=files, count=len(files))
 
@@ -59,7 +62,7 @@ async def get_upload(
     db: AsyncSession = Depends(get_db),
     service: UploadService = Depends(get_upload_service),
 ) -> UploadedFileInfo:
-    """Fetch metadata for a single uploaded PDF."""
+    """Fetch metadata for a single uploaded file."""
     info = await service.get_upload(file_id, db)
     if info is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
@@ -72,7 +75,7 @@ async def delete_upload(
     db: AsyncSession = Depends(get_db),
     service: UploadService = Depends(get_upload_service),
 ) -> None:
-    """Delete an uploaded PDF and its metadata."""
+    """Delete an uploaded file and its metadata."""
     deleted = await service.delete_upload(file_id, db)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")

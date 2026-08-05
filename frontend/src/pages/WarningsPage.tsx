@@ -1,27 +1,37 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { getErrorMessage } from "@/api/client";
 import { analyzePrescription } from "@/api/endpoints";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { StatCard } from "@/components/ui/StatCard";
-import { demoPatient, demoVisits } from "@/data/demoPatient";
+import { usePatient } from "@/hooks/usePatient";
 import type { ConflictFinding, SeveritySummary } from "@/types/api";
 import { cn } from "@/utils/cn";
 
 export function WarningsPage() {
+  const { overview, loading: patientLoading } = usePatient();
   const [findings, setFindings] = useState<ConflictFinding[]>([]);
   const [summary, setSummary] = useState<SeveritySummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
+    const medicines = overview?.medicines ?? [];
+    if (!medicines.length) {
+      setFindings(overview?.findings ?? []);
+      setSummary(null);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const result = await analyzePrescription({
-        medicines: demoVisits[demoVisits.length - 1].medicines.map((m) => ({ ...m })),
-        allergies: demoPatient.allergies,
+        medicines,
+        allergies: overview?.allergies ?? [],
       });
       setFindings(result.findings);
       setSummary(result.summary);
@@ -33,20 +43,32 @@ export function WarningsPage() {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    if (!patientLoading) {
+      void load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientLoading, overview?.patient_id, overview?.medicines?.length]);
+
+  const highRisk = findings.some((f) => f.severity === "High");
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Warnings"
-        description="Duplicate medicines, dosage conflicts, allergy conflicts, and possible interactions."
+        description="Duplicate medicines, dosage conflicts, allergy conflicts, and possible interactions from uploaded reports."
         actions={
           <button type="button" className="btn-primary" disabled={loading} onClick={() => void load()}>
             {loading ? "Scanning…" : "Re-scan regimen"}
           </button>
         }
       />
+
+      <MedicalDisclaimer text={overview?.disclaimer} />
+      {highRisk && (
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100">
+          High-risk findings detected. Consult a doctor or pharmacist before changing any medicines.
+        </div>
+      )}
 
       {summary && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -64,7 +86,14 @@ export function WarningsPage() {
       )}
 
       <Panel title="Safety findings">
-        {findings.length === 0 ? (
+        {!overview?.has_extractions ? (
+          <div className="space-y-3">
+            <p className="text-sm text-surface-500">Upload and analyze reports to generate warnings.</p>
+            <Link to="/uploads" className="btn-primary inline-flex">
+              Go to uploads
+            </Link>
+          </div>
+        ) : findings.length === 0 ? (
           <p className="text-sm text-surface-500">No warnings detected for the current regimen.</p>
         ) : (
           <div className="space-y-3">

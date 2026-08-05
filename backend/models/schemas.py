@@ -271,6 +271,89 @@ class AnalysisResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Patient processing pipeline
+# ---------------------------------------------------------------------------
+
+
+class ProcessUploadsRequest(BaseModel):
+    file_ids: List[str] = Field(
+        default_factory=list,
+        description="Uploaded file IDs to analyze. Empty = process all unprocessed uploads.",
+    )
+    patient_id: Optional[str] = Field(
+        default=None,
+        description="Patient id to group visits under. Defaults to extracted name or 'default-patient'.",
+    )
+    ingest_rag: bool = True
+
+
+class ProcessFileResult(BaseModel):
+    file_id: str
+    filename: str
+    status: str  # completed | failed | skipped
+    visit_id: Optional[str] = None
+    visit_date: Optional[str] = None
+    patient_name: Optional[str] = None
+    confidence: Optional[ConfidenceScore] = None
+    error: Optional[str] = None
+    medicines_count: int = 0
+    labs_count: int = 0
+
+
+class ProcessUploadsResponse(BaseModel):
+    patient_id: str
+    processed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    results: List[ProcessFileResult] = Field(default_factory=list)
+    rag_chunks_indexed: int = 0
+    message: str = ""
+    disclaimer: str = (
+        "This tool supports clinical review only. It is not a diagnosis. "
+        "Consult a doctor or pharmacist for high-risk or low-confidence findings."
+    )
+
+
+class TimelineVisitView(BaseModel):
+    """Frontend-friendly visit card for the timeline UI."""
+
+    id: str
+    date: str
+    type: str = "Clinical document"
+    summary: str = ""
+    diagnosis: List[str] = Field(default_factory=list)
+    medicines: List[Medicine] = Field(default_factory=list)
+    labs: List[LabResult] = Field(default_factory=list)
+    allergies: List[str] = Field(default_factory=list)
+    hospital: Optional[str] = None
+    doctor: Optional[str] = None
+    source_file_id: Optional[str] = None
+    source_filename: Optional[str] = None
+    confidence: Optional[ConfidenceScore] = None
+
+
+class PatientOverviewResponse(BaseModel):
+    patient_id: str
+    patient_name: Optional[str] = None
+    hospital: Optional[str] = None
+    doctor: Optional[str] = None
+    allergies: List[str] = Field(default_factory=list)
+    primary_diagnosis: Optional[str] = None
+    visit_count: int = 0
+    visits: List[TimelineVisitView] = Field(default_factory=list)
+    medicines: List[Medicine] = Field(default_factory=list)
+    lab_visits: List[LabVisitInput] = Field(default_factory=list)
+    findings: List[ConflictFinding] = Field(default_factory=list)
+    lab_trends: Optional[LabTrendResponse] = None
+    has_uploads: bool = False
+    has_extractions: bool = False
+    disclaimer: str = (
+        "This tool supports clinical review only. It is not a diagnosis. "
+        "Consult a doctor or pharmacist for high-risk or low-confidence findings."
+    )
+
+
+# ---------------------------------------------------------------------------
 # RAG
 # ---------------------------------------------------------------------------
 

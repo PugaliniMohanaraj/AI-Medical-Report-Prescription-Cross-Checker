@@ -15,7 +15,6 @@ from backend.rag.pipeline import RagError, RagPipeline
 from backend.services.pdf_service import PdfExtractionError, PdfService
 from backend.services.upload_service import UploadService
 from backend.utils.config import Settings
-from backend.utils.paths import get_upload_dir
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 
@@ -44,10 +43,9 @@ async def rag_ingest(
     pipeline: RagPipeline = Depends(get_rag_pipeline),
     pdf_service: PdfService = Depends(get_pdf_service),
     upload_service: UploadService = Depends(get_upload_service),
-    settings: Settings = Depends(get_app_settings),
 ) -> RagIngestResponse:
     """
-    Ingest free-text documents and/or uploaded PDF file IDs into the RAG index.
+    Ingest free-text documents and/or uploaded file IDs (PDF or images) into the RAG index.
     """
     documents: list[dict] = []
 
@@ -64,14 +62,14 @@ async def rag_ingest(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Upload not found: {file_id}",
             )
-        pdf_path = get_upload_dir(settings) / f"{file_id}.pdf"
-        if not pdf_path.exists():
+        stored_path = await upload_service.get_stored_path(file_id, db)
+        if stored_path is None or not stored_path.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Stored PDF missing for file_id={file_id}",
+                detail=f"Stored file missing for file_id={file_id}",
             )
         try:
-            extracted = await pdf_service.extract(pdf_path)
+            extracted = await pdf_service.extract(stored_path)
         except PdfExtractionError as exc:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -87,7 +85,7 @@ async def rag_ingest(
                 "document_id": file_id,
                 "content": extracted.full_text,
                 "title": info.filename,
-                "source": "pdf_upload",
+                "source": "upload",
                 "file_id": file_id,
                 "patient_id": payload.patient_id,
             }

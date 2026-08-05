@@ -78,7 +78,7 @@ export function SettingsPage() {
         <Panel title="Workspace" description="Document intake and model switching">
           <div className="space-y-3 text-sm">
             <p>
-              Upload multi-PDF reports from the{" "}
+              Upload PDF or image reports from the{" "}
               <Link className="font-medium text-brand-500 underline-offset-2 hover:underline" to="/uploads">
                 Uploads
               </Link>{" "}
@@ -93,7 +93,7 @@ export function SettingsPage() {
 
         <Panel title="About MedCross">
           <p className="text-sm leading-relaxed text-surface-700 dark:text-surface-200">
-            AI Medical Report & Prescription Cross-Checker for competition demos — PDF intake,
+            AI Medical Report & Prescription Cross-Checker for competition demos — PDF and image intake,
             structured extraction, prescription safety, lab trends, and RAG follow-up chat.
           </p>
         </Panel>

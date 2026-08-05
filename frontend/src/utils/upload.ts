@@ -2,6 +2,32 @@ export const MAX_UPLOAD_FILES = 10;
 export const MAX_UPLOAD_SIZE_MB = 20;
 export const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
+const ALLOWED_EXTENSIONS = new Set([
+  ".pdf",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".tif",
+  ".tiff",
+  ".bmp",
+  ".gif",
+]);
+
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/tiff",
+  "image/bmp",
+  "image/x-ms-bmp",
+  "image/gif",
+  "application/octet-stream",
+  "",
+]);
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -24,7 +50,12 @@ export interface LocalFileValidation {
   errors: string[];
 }
 
-export function validatePdfFiles(
+function fileExtension(name: string): string {
+  const index = name.lastIndexOf(".");
+  return index >= 0 ? name.slice(index).toLowerCase() : "";
+}
+
+export function validateUploadFiles(
   incoming: File[],
   alreadyQueued: File[] = [],
 ): LocalFileValidation {
@@ -41,10 +72,15 @@ export function validatePdfFiles(
       continue;
     }
 
-    const isPdfMime = file.type === "application/pdf" || file.type === "";
-    const isPdfName = file.name.toLowerCase().endsWith(".pdf");
-    if (!isPdfName || (!isPdfMime && file.type !== "application/octet-stream")) {
-      errors.push(`"${file.name}" is not a PDF.`);
+    const extension = fileExtension(file.name);
+    const mime = file.type.toLowerCase();
+    const extensionOk = ALLOWED_EXTENSIONS.has(extension);
+    const mimeOk = ALLOWED_MIME_TYPES.has(mime);
+
+    if (!extensionOk || !mimeOk) {
+      errors.push(
+        `"${file.name}" is not a supported file. Use PDF or images (PNG, JPG, WEBP, TIFF, BMP, GIF).`,
+      );
       continue;
     }
 
@@ -75,3 +111,6 @@ export function validatePdfFiles(
 
   return { accepted, errors };
 }
+
+/** @deprecated Use validateUploadFiles */
+export const validatePdfFiles = validateUploadFiles;

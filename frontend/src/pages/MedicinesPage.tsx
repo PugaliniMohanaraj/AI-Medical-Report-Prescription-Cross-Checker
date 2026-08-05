@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getErrorMessage } from "@/api/client";
 import { analyzePrescription } from "@/api/endpoints";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { demoAllergiesText, demoMedicinesText, demoVisits } from "@/data/demoPatient";
+import { usePatient } from "@/hooks/usePatient";
 import type { ConflictFinding, MedicineInput, SeveritySummary } from "@/types/api";
 import { cn } from "@/utils/cn";
 
@@ -20,15 +22,29 @@ function parseMedicines(raw: string): MedicineInput[] {
     .filter((med) => med.name);
 }
 
+function medicinesToText(meds: MedicineInput[]) {
+  return meds
+    .map((m) => [m.name, m.dosage, m.frequency, m.duration].filter(Boolean).join(" | "))
+    .join("\n");
+}
+
 export function MedicinesPage() {
-  const [medicinesText, setMedicinesText] = useState(demoMedicinesText);
-  const [allergiesText, setAllergiesText] = useState(demoAllergiesText);
+  const { overview } = usePatient();
+  const [medicinesText, setMedicinesText] = useState("");
+  const [allergiesText, setAllergiesText] = useState("");
   const [findings, setFindings] = useState<ConflictFinding[]>([]);
   const [summary, setSummary] = useState<SeveritySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const latest = demoVisits[demoVisits.length - 1];
+  useEffect(() => {
+    if (!overview) return;
+    setMedicinesText(medicinesToText(overview.medicines));
+    setAllergiesText(overview.allergies.join(", "));
+    setFindings(overview.findings);
+  }, [overview]);
+
+  const latest = overview?.visits?.[overview.visits.length - 1];
   const allergies = useMemo(
     () => allergiesText.split(/[\n,;]+/).map((item) => item.trim()).filter(Boolean),
     [allergiesText],
@@ -57,7 +73,7 @@ export function MedicinesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Medicines"
-        description="Review the active regimen and run prescription safety analysis."
+        description="Review the regimen extracted from uploaded reports and run prescription safety analysis."
         actions={
           <button type="button" className="btn-primary" disabled={loading} onClick={() => void onAnalyze()}>
             {loading ? "Analyzing…" : "Analyze regimen"}
@@ -65,19 +81,33 @@ export function MedicinesPage() {
         }
       />
 
+      <MedicalDisclaimer text={overview?.disclaimer} />
+
+      {!overview?.has_extractions && (
+        <Panel>
+          <p className="text-sm text-surface-500">No medicines extracted yet.</p>
+          <Link to="/uploads" className="btn-primary mt-4 inline-flex">
+            Upload reports
+          </Link>
+        </Panel>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Latest encounter regimen" description={latest.date}>
+        <Panel title="Extracted regimen" description={latest?.date || "From uploaded visits"}>
           <ul className="divide-y divide-surface-200 dark:divide-surface-700">
-            {latest.medicines.map((med) => (
-              <li key={med.name} className="flex items-start justify-between gap-3 py-3">
+            {(overview?.medicines ?? []).map((med) => (
+              <li key={`${med.name}-${med.dosage}`} className="flex items-start justify-between gap-3 py-3">
                 <div>
                   <p className="font-medium">{med.name}</p>
                   <p className="text-xs text-surface-500">
-                    {med.dosage} · {med.frequency} · {med.duration}
+                    {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
                   </p>
                 </div>
               </li>
             ))}
+            {!overview?.medicines?.length && (
+              <li className="py-3 text-sm text-surface-500">No medicines available.</li>
+            )}
           </ul>
         </Panel>
 

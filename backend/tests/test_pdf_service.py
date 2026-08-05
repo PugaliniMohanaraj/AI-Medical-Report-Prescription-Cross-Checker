@@ -70,7 +70,7 @@ def test_ocr_fallback_when_no_selectable_text(tmp_path: Path, settings: Settings
     def fake_ocr(_page: pymupdf.Page) -> str:
         return "OCR recovered lab values: HbA1c 6.2%"
 
-    service._ocr_page = fake_ocr  # type: ignore[method-assign]
+    service._ocr_page_tesseract = fake_ocr  # type: ignore[method-assign]
 
     result = service.extract_sync(pdf_path)
 
