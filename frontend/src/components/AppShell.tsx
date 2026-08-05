@@ -75,61 +75,61 @@ export function AppShell() {
                     <IconMenu />
                   </button>
                   <div className="min-w-0">
-                    <h1 className="truncate font-display text-2xl font-semibold tracking-tight text-surface-900 dark:text-surface-50">
+                    <h1 className="truncate font-display text-3xl font-semibold tracking-tight text-surface-900 dark:text-surface-50 sm:text-4xl">
                       {greetingForNow()}, {firstName}!
                     </h1>
-                    <p className="truncate text-sm text-surface-500 dark:text-surface-400">{caption}</p>
+                    <p className="mt-1 truncate text-base text-surface-500 dark:text-surface-400">{caption}</p>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     to="/uploads"
-                    className="rounded-2xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:bg-brand-700"
+                    className="rounded-2xl bg-brand-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/25 transition hover:bg-brand-700"
                   >
                     Upload reports
                   </Link>
                   <Link
                     to="/chat"
-                    className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-700/40 dark:bg-brand-900/40 dark:text-brand-100"
+                    className="rounded-2xl border border-brand-100 bg-brand-50 px-5 py-3 text-base font-semibold text-brand-700 transition hover:bg-brand-100 dark:border-brand-700/40 dark:bg-brand-900/40 dark:text-brand-100"
                   >
                     Ask AI
                   </Link>
                   <button
                     type="button"
-                    className="relative rounded-2xl border border-surface-200 bg-white p-2.5 text-surface-600 shadow-sm dark:border-surface-700 dark:bg-surface-900 dark:text-surface-200"
+                    className="relative rounded-2xl border border-surface-200 bg-white p-3 text-surface-600 shadow-sm dark:border-surface-700 dark:bg-surface-900 dark:text-surface-200"
                     aria-label="Notifications"
                   >
                     <IconBell />
                     <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
                   </button>
-                  <div className="flex items-center gap-2 rounded-2xl border border-surface-200 bg-white py-1.5 pl-1.5 pr-3 shadow-sm dark:border-surface-700 dark:bg-surface-900">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-sm font-semibold text-white">
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-surface-200 bg-white py-1.5 pl-1.5 pr-3.5 shadow-sm dark:border-surface-700 dark:bg-surface-900">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white">
                       {firstName.slice(0, 1)}
                     </div>
                     <div className="hidden sm:block">
-                      <p className="text-xs font-semibold leading-tight">{patientName}</p>
-                      <p className="text-[10px] text-surface-500">{patientId}</p>
+                      <p className="text-sm font-semibold leading-tight">{patientName}</p>
+                      <p className="text-xs text-surface-500">{patientId}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="relative max-w-2xl">
-                <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
+                <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
                 <input
-                  className="w-full rounded-2xl border border-surface-200 bg-white py-2.5 pl-10 pr-16 text-sm shadow-sm outline-none ring-brand-500 placeholder:text-surface-400 focus:ring-2 dark:border-surface-700 dark:bg-surface-900"
+                  className="w-full rounded-2xl border border-surface-200 bg-white py-3 pl-11 pr-16 text-base shadow-sm outline-none ring-brand-500 placeholder:text-surface-400 focus:ring-2 dark:border-surface-700 dark:bg-surface-900"
                   placeholder="Search visits, medicines, labs, warnings…"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-surface-200 px-1.5 py-0.5 text-[10px] font-medium text-surface-400 dark:border-surface-700">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-surface-200 px-1.5 py-0.5 text-xs font-medium text-surface-400 dark:border-surface-700">
                   ⌘K
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 text-[11px]">
+              <div className="flex items-center gap-2 text-sm">
                 <span
                   className={cn(
-                    "inline-flex rounded-full px-2.5 py-1 font-medium",
+                    "inline-flex rounded-full px-3 py-1.5 font-medium",
                     health?.status === "ok"
                       ? "bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-100"
                       : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",

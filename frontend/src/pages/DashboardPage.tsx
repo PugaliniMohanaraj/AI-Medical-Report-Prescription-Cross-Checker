@@ -54,7 +54,7 @@ export function DashboardPage() {
       <MedicalDisclaimer text={overview?.disclaimer} />
 
       {(error || analyzing || loading) && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-base text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
           {analyzing
             ? "AI is analyzing uploaded reports…"
             : loading
@@ -65,8 +65,8 @@ export function DashboardPage() {
 
       {!overview?.has_extractions && !loading && (
         <div className="rounded-[28px] border border-surface-200 bg-white p-6 dark:border-surface-700 dark:bg-surface-900">
-          <h2 className="font-display text-xl font-semibold">Start with uploads</h2>
-          <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">
+          <h2 className="font-display text-2xl font-semibold">Start with uploads</h2>
+          <p className="mt-2 text-base text-surface-600 dark:text-surface-300">
             Upload multi-visit medical reports. The AI will extract medicines, labs, and dates,
             then fill this dashboard, timeline, warnings, and chat.
           </p>
@@ -88,10 +88,10 @@ export function DashboardPage() {
           <div className="grid gap-5 lg:grid-cols-[1.4fr_0.9fr]">
             <section className="relative overflow-hidden rounded-[28px] border border-surface-200/80 bg-white p-6 dark:border-surface-700 dark:bg-surface-900">
               <div className="mb-4 flex items-center gap-2">
-                <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-700 dark:bg-brand-900/40 dark:text-brand-100">
+                <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-700 dark:bg-brand-900/40 dark:text-brand-100">
                   Patient snapshot
                 </span>
-                <span className="text-xs text-surface-500">
+                <span className="text-sm text-surface-500">
                   {[overview?.hospital, overview?.doctor].filter(Boolean).join(" · ") || "From uploaded reports"}
                 </span>
               </div>
@@ -105,33 +105,33 @@ export function DashboardPage() {
                   ["Documents", String(visits.length)],
                 ].map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-surface-400">{label}</dt>
-                    <dd className="mt-1 text-sm font-semibold">{value}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-surface-400">{label}</dt>
+                    <dd className="mt-1.5 text-base font-semibold">{value}</dd>
                   </div>
                 ))}
               </dl>
               <Link
                 to="/timeline"
-                className="mt-5 inline-flex items-center gap-1 rounded-2xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white"
+                className="mt-5 inline-flex items-center gap-1.5 rounded-2xl bg-brand-500 px-5 py-3 text-base font-semibold text-white"
               >
                 View timeline <IconChevron />
               </Link>
             </section>
 
             <section className="rounded-[28px] border border-surface-200/80 bg-white p-5 dark:border-surface-700 dark:bg-surface-900">
-              <h2 className="font-display text-lg font-semibold">Quick actions</h2>
+              <h2 className="font-display text-xl font-semibold">Quick actions</h2>
               <div className="mt-4 grid gap-3">
                 {quickActions.map((action) => (
                   <Link
                     key={action.to}
                     to={action.to}
-                    className="group flex items-center justify-between rounded-2xl border border-surface-100 bg-surface-50/70 px-3 py-3 transition hover:border-brand-100 hover:bg-white dark:border-surface-700 dark:bg-surface-950/50"
+                    className="group flex items-center justify-between rounded-2xl border border-surface-100 bg-surface-50/70 px-3.5 py-3.5 transition hover:border-brand-100 hover:bg-white dark:border-surface-700 dark:bg-surface-950/50"
                   >
                     <span className="flex items-center gap-3">
-                      <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl", action.tone)}>
+                      <span className={cn("flex h-10 w-10 items-center justify-center rounded-xl", action.tone)}>
                         <action.icon className="h-4 w-4" />
                       </span>
-                      <span className="text-sm font-semibold">{action.label}</span>
+                      <span className="text-base font-semibold">{action.label}</span>
                     </span>
                     <IconChevron className="text-surface-400" />
                   </Link>
@@ -142,20 +142,20 @@ export function DashboardPage() {
 
           <section className="rounded-[28px] border border-surface-200/80 bg-white p-5 dark:border-surface-700 dark:bg-surface-900">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold">Lab trend preview</h2>
-              <Link to="/labs" className="text-sm font-medium text-brand-500 hover:underline">
+              <h2 className="font-display text-xl font-semibold">Lab trend preview</h2>
+              <Link to="/labs" className="text-base font-medium text-brand-500 hover:underline">
                 Open labs
               </Link>
             </div>
             {chartData.length === 0 ? (
-              <p className="text-sm text-surface-500">No chartable lab trends yet.</p>
+              <p className="text-base text-surface-500">No chartable lab trends yet.</p>
             ) : (
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip />
                     <Area type="monotone" dataKey="value" stroke="#2d6a4f" fill="#2d6a4f33" />
                   </AreaChart>
@@ -163,7 +163,7 @@ export function DashboardPage() {
               </div>
             )}
             {labs?.ai_explanation && (
-              <p className="mt-3 text-sm text-surface-600 dark:text-surface-300">{labs.ai_explanation}</p>
+              <p className="mt-3 text-base text-surface-600 dark:text-surface-300">{labs.ai_explanation}</p>
             )}
           </section>
         </div>
@@ -171,27 +171,27 @@ export function DashboardPage() {
         <div className="space-y-5">
           <section className="rounded-[28px] border border-surface-200/80 bg-white p-5 dark:border-surface-700 dark:bg-surface-900">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">Safety warnings</h2>
-              <Link to="/warnings" className="text-sm font-medium text-brand-500 hover:underline">
+              <h2 className="font-display text-xl font-semibold">Safety warnings</h2>
+              <Link to="/warnings" className="text-base font-medium text-brand-500 hover:underline">
                 View all
               </Link>
             </div>
             {findings.length === 0 ? (
-              <p className="text-sm text-surface-500">No warnings from extracted medicines.</p>
+              <p className="text-base text-surface-500">No warnings from extracted medicines.</p>
             ) : (
               <div className="space-y-3">
                 {findings.slice(0, 4).map((finding) => (
                   <article
                     key={`${finding.type}-${finding.title}`}
                     className={cn(
-                      "rounded-2xl border px-3 py-3",
+                      "rounded-2xl border px-3.5 py-3.5",
                       finding.severity === "High"
                         ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30"
                         : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30",
                     )}
                   >
-                    <p className="text-[11px] font-semibold uppercase">{finding.severity}</p>
-                    <p className="mt-1 text-sm font-semibold">{finding.title}</p>
+                    <p className="text-xs font-semibold uppercase">{finding.severity}</p>
+                    <p className="mt-1.5 text-base font-semibold">{finding.title}</p>
                   </article>
                 ))}
               </div>
@@ -201,9 +201,9 @@ export function DashboardPage() {
           <section className="rounded-[28px] border border-surface-200/80 bg-white p-5 dark:border-surface-700 dark:bg-surface-900">
             <div className="mb-3 flex items-center gap-2">
               <IconShield className="h-4 w-4 text-brand-500" />
-              <h2 className="font-display text-lg font-semibold">Ask AI</h2>
+              <h2 className="font-display text-xl font-semibold">Ask AI</h2>
             </div>
-            <p className="text-sm text-surface-600 dark:text-surface-300">
+            <p className="text-base text-surface-600 dark:text-surface-300">
               Follow-up questions use your uploaded reports via RAG, with confidence scores.
             </p>
             <Link to="/chat" className="btn-primary mt-4 inline-flex items-center gap-2">
@@ -226,10 +226,10 @@ function KpiCard({
   hint: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-surface-200/80 bg-white p-4 dark:border-surface-700 dark:bg-surface-900">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-surface-400">{label}</p>
-      <p className="mt-2 font-display text-3xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs text-surface-500">{hint}</p>
+    <div className="rounded-[24px] border border-surface-200/80 bg-white p-5 dark:border-surface-700 dark:bg-surface-900">
+      <p className="text-sm font-semibold uppercase tracking-wide text-surface-400">{label}</p>
+      <p className="mt-2 font-display text-4xl font-semibold">{value}</p>
+      <p className="mt-1.5 text-sm text-surface-500">{hint}</p>
     </div>
   );
 }
