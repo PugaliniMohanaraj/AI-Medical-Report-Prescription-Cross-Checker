@@ -1,15 +1,18 @@
 """Medical Report & Prescription Cross-Checker — FastAPI application entrypoint."""
 
 from contextlib import asynccontextmanager
+import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from backend.api.routes import api_router
 from backend.models.database import init_db
 from backend.utils.config import get_settings
 from backend.utils.paths import resolve_path
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -34,6 +37,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Add CORS last so it wraps responses (including errors) for browser clients.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -42,6 +46,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+        logger.exception("Unhandled server error: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error. Check API logs / OPENAI_API_KEY."},
+        )
 
     @app.get("/", include_in_schema=False)
     async def root():

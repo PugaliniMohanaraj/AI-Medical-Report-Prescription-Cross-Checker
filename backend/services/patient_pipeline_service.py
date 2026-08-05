@@ -56,13 +56,20 @@ class PatientPipelineService:
         self.settings = settings or get_settings()
         self.upload_dir = get_upload_dir(self.settings)
         self.pdf_service = PdfService(self.settings)
-        self.extraction_service = ExtractionService(
-            settings=self.settings,
-            llm=get_llm_client(self.settings),
-        )
+        # Lazy: overview/timeline must work even if OPENAI_API_KEY is missing.
+        self._extraction_service: ExtractionService | None = None
         self.conflict_service = ConflictService()
         self.lab_service = LabService(settings=self.settings)
         self._rag: RagPipeline | None = None
+
+    @property
+    def extraction_service(self) -> ExtractionService:
+        if self._extraction_service is None:
+            self._extraction_service = ExtractionService(
+                settings=self.settings,
+                llm=get_llm_client(self.settings),
+            )
+        return self._extraction_service
 
     def _rag_pipeline(self) -> RagPipeline:
         if self._rag is None:
