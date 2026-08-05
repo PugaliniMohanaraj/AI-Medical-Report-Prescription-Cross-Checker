@@ -21,6 +21,8 @@ services:
         value: BAAI/bge-small-en-v1.5
       - key: CORS_ORIGINS
         sync: false
+      - key: FRONTEND_URL
+        sync: false
       - key: UPLOAD_DIR
         value: backend/uploads
       - key: CHROMA_PERSIST_DIR

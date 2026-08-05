@@ -34,13 +34,14 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
-    # CORS
+    # CORS (comma-separated). Also merges FRONTEND_URL when set (hosted Vercel origin).
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    frontend_url: str = ""
 
     # LLM
     llm_provider: Literal["ollama", "openai"] = "ollama"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:3b"
+    ollama_model: str = "llama3.1"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_base_url: str = "https://api.openai.com/v1"
@@ -79,7 +80,11 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> List[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
+        frontend = self.frontend_url.strip().rstrip("/")
+        if frontend and frontend not in origins:
+            origins.append(frontend)
+        return origins
 
 
 @lru_cache

@@ -100,7 +100,7 @@ export function DashboardPage() {
                   ["Name", overview?.patient_name || "Not extracted yet"],
                   ["Patient ID", overview?.patient_id || "—"],
                   ["Allergies", overview?.allergies?.join(", ") || "None listed"],
-                  ["Primary diagnosis", overview?.primary_diagnosis || "—"],
+                  ["Extracted diagnoses", overview?.primary_diagnosis || "—"],
                   ["Latest visit", visits[visits.length - 1]?.date || "—"],
                   ["Documents", String(visits.length)],
                 ].map(([label, value]) => (

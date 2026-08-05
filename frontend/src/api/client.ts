@@ -1,6 +1,13 @@
 import axios, { type AxiosProgressEvent } from "axios";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const fallbackBase = "http://localhost:8000/api/v1";
+const baseURL = import.meta.env.VITE_API_BASE_URL ?? fallbackBase;
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
+  console.warn(
+    "[MedCross] VITE_API_BASE_URL is not set. Production builds will call localhost and fail. Set it in Vercel to your Render API …/api/v1 and rebuild.",
+  );
+}
 
 export const apiClient = axios.create({
   baseURL,

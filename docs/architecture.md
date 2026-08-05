@@ -2,8 +2,9 @@
 
 ## Goals
 
-Production-ready **AI Medical Report & Prescription Cross-Checker** for competition use:
-modular, scalable, clean architecture, with deferred business logic in this scaffold phase.
+**MedCross** — AI Medical Report & Prescription Cross-Checker for competition use:
+modular FastAPI + React app with real PDF/OCR ingestion, LLM extraction, rule-based
+safety checks, lab trends, and RAG follow-up Q&A.
 
 ## High-level diagram
 
@@ -25,32 +26,34 @@ modular, scalable, clean architecture, with deferred business logic in this scaf
  (meta)     (vectors)  Ollama | OpenAI
 ```
 
+## End-to-end pipeline
+
+1. Multi-file upload (PDF / images) → `UploadService` + disk + SQLite  
+2. Text / OCR → `PdfService`  
+3. Structured JSON → `ExtractionService` (LLM)  
+4. Visit merge → `TimelineService` / `PatientPipelineService`  
+5. Conflicts → `ConflictService` (rule KB)  
+6. Lab trends → `LabService` (+ optional LLM narrative)  
+7. Follow-up Q&A → `RagPipeline` (chunk · embed · retrieve · generate) + confidence  
+
 ## Layers
 
 | Layer | Path | Responsibility |
 |-------|------|----------------|
 | API | `backend/api` | HTTP routes, deps, request validation |
 | Models | `backend/models` | Pydantic schemas + SQLAlchemy metadata |
-| Services | `backend/services` | PDF, extraction, timeline, conflicts, labs |
+| Services | `backend/services` | PDF, extraction, timeline, conflicts, labs, pipeline |
 | RAG | `backend/rag` | Embeddings, vector store, pipeline |
 | Utils | `backend/utils` | Settings, LLM factory |
 | UI | `frontend/src` | Pages, components, API client |
 
 ## LLM switching
 
-`LLM_PROVIDER=ollama|openai` in `backend/.env` selects the provider via `backend/utils/llm.py`.
-Embeddings default to `BAAI/bge-small-en-v1.5`.
+`LLM_PROVIDER=ollama|openai` selects the provider via `backend/utils/llm.py`.  
+Hosted demos should use OpenAI; local demos can use Ollama.  
+Embeddings default to `BAAI/bge-small-en-v1.5` (hashing fallback if unavailable).
 
 ## Deployment targets
 
-- Frontend → Vercel (`frontend/`)
-- Backend → Render (`backend/` + Docker or native Uvicorn)
-
-## Planned feature pipeline (not implemented yet)
-
-1. Multi-PDF upload → `PdfService`
-2. Text → structured JSON → `ExtractionService`
-3. Visit merge → `TimelineService`
-4. Conflicts → `ConflictService`
-5. Lab trends → `LabService`
-6. Follow-up Q&A → `RagPipeline` + confidence scores
+- Frontend → Vercel (`frontend/`) — set `VITE_API_BASE_URL` at build time  
+- Backend → Render (`backend/Dockerfile`) — set `OPENAI_API_KEY` + `CORS_ORIGINS` / `FRONTEND_URL`

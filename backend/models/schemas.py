@@ -1,4 +1,4 @@
-"""Pydantic request/response schemas (stubs — no business logic)."""
+"""Pydantic request/response schemas for the MedCross API."""
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
