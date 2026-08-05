@@ -86,7 +86,10 @@ export function UploadPage() {
       setProcessResult(analysis);
       setSuccessMessage(analysis.message);
     } catch (error) {
-      setServerError(getErrorMessage(error));
+      setSuccessMessage(null);
+      setServerError(
+        `${getErrorMessage(error)}. File may still be saved below — click “Analyze stored uploads” to retry.`,
+      );
       setProgress(0);
     } finally {
       setUploading(false);
@@ -95,13 +98,17 @@ export function UploadPage() {
 
   const onAnalyzeExisting = async () => {
     setServerError(null);
+    setSuccessMessage(null);
     setProcessResult(null);
     try {
       const analysis = await analyzeUploads();
       setProcessResult(analysis);
       setSuccessMessage(analysis.message);
     } catch (error) {
-      setServerError(getErrorMessage(error));
+      setSuccessMessage(null);
+      setServerError(
+        `${getErrorMessage(error)}. If this keeps happening, check Render OPENAI_API_KEY / Groq settings and wait for the API to wake up.`,
+      );
     }
   };
 
