@@ -5,15 +5,29 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
 
+# OpenCV / RapidOCR + Tesseract system deps (required for JPEG/PNG OCR on Render)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && (test -d /usr/share/tesseract-ocr/5/tessdata \
+        || ln -s /usr/share/tesseract-ocr/*/tessdata /usr/share/tesseract-ocr/5/tessdata \
+        || true)
 
 COPY backend/requirements.txt /app/backend/requirements.txt
 COPY backend/requirements-ai.txt /app/backend/requirements-ai.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements-ai.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements-ai.txt \
+    && pip install --no-cache-dir "opencv-python-headless>=4.8.0"
 
 COPY backend /app/backend
 

@@ -12,6 +12,7 @@ PyMuPDF==1.25.1
 Pillow>=10.0.0
 rapidocr-onnxruntime>=1.2.3
 onnxruntime>=1.16.0
+opencv-python-headless>=4.8.0
 
 # HTTP / utils
 httpx==0.28.1

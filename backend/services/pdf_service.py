@@ -169,18 +169,35 @@ class PdfService:
         except Exception as exc:
             logger.warning("RapidOCR failed for image %s: %s", path.name, exc)
             warning = f"RapidOCR failed: {exc}"
-            # Fall back to PyMuPDF + Tesseract if available.
+
+        if not self._has_usable_text(text):
+            # Re-render via PyMuPDF then OCR (helps when direct file OCR fails on Linux).
+            try:
+                text = self._rapid_ocr_image_via_pymupdf(path)
+                if self._has_usable_text(text):
+                    engine_used = "rapidocr+pymupdf"
+                    warning = None
+            except Exception as exc:
+                logger.warning("PyMuPDF RapidOCR fallback failed for %s: %s", path.name, exc)
+                warning = f"{warning}; PyMuPDF RapidOCR: {exc}" if warning else str(exc)
+
+        if not self._has_usable_text(text):
             try:
                 document = pymupdf.open(path)
                 try:
                     page = document.load_page(0)
                     text = self._ocr_page_tesseract(page)
-                    engine_used = "tesseract"
-                    warning = None
+                    if self._has_usable_text(text):
+                        engine_used = "tesseract"
+                        warning = None
                 finally:
                     document.close()
             except Exception as tess_exc:
-                warning = f"{warning}; Tesseract fallback failed: {tess_exc}"
+                warning = (
+                    f"{warning}; Tesseract fallback failed: {tess_exc}"
+                    if warning
+                    else f"Tesseract fallback failed: {tess_exc}"
+                )
 
         method = ExtractionMethod.OCR if self._has_usable_text(text) else ExtractionMethod.EMPTY
         page = ExtractedPage(
@@ -318,6 +335,15 @@ class PdfService:
         if not result:
             return ""
         return "\n".join(str(line[1]).strip() for line in result if line and line[1]).strip()
+
+    def _rapid_ocr_image_via_pymupdf(self, path: Path) -> str:
+        """Open an image with PyMuPDF, render a PNG pixmap, then RapidOCR."""
+        document = pymupdf.open(path)
+        try:
+            page = document.load_page(0)
+            return self._rapid_ocr_pixmap(page)
+        finally:
+            document.close()
 
     def _rapid_ocr_pixmap(self, page: pymupdf.Page) -> str:
         scale = max(self.ocr_dpi / 72.0, 1.0)
