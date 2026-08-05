@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from backend.api.routes import api_router
 from backend.models.database import init_db
@@ -40,6 +41,21 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.get("/", include_in_schema=False)
+    async def root():
+        """Friendly landing for the API host (avoids bare 404 on Render URL)."""
+        return {
+            "app": settings.app_name,
+            "status": "ok",
+            "health": f"{settings.api_prefix}/health",
+            "docs": "/docs",
+            "api_prefix": settings.api_prefix,
+        }
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        return RedirectResponse(url="/docs")
 
     app.include_router(api_router, prefix=settings.api_prefix)
 
