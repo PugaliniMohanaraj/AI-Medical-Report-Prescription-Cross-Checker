@@ -31,8 +31,14 @@ class EmbeddingService:
         self._backend = "hash"
         self._model = None
 
-        if not force_hash:
+        prefer_hash = force_hash or self.settings.embedding_backend == "hash"
+        prefer_st = self.settings.embedding_backend == "sentence_transformers"
+        if prefer_hash:
+            logger.info("Using hashing embeddings (EMBEDDING_BACKEND=%s)", self.settings.embedding_backend)
+        elif prefer_st or self.settings.embedding_backend == "auto":
             self._try_load_sentence_transformer()
+            if prefer_st and self._backend != "sentence_transformers":
+                logger.warning("sentence-transformers requested but unavailable; using hash fallback")
 
     def _try_load_sentence_transformer(self) -> None:
         try:

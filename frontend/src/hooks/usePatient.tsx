@@ -64,7 +64,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       try {
         const result = await processUploads({
           file_ids: fileIds,
-          ingest_rag: true,
+          // Lightweight path: extraction + LLM only. RAG uses hash embeddings when enabled.
+          ingest_rag: false,
         });
         await refresh();
         return result;

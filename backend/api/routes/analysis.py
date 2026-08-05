@@ -201,12 +201,19 @@ async def process_uploads(
     extract text → structured medical extraction → store visits → RAG ingest.
     """
     body = payload or ProcessUploadsRequest()
-    return await pipeline.process_uploads(
-        db,
-        file_ids=body.file_ids or None,
-        patient_id=body.patient_id,
-        ingest_rag=body.ingest_rag,
-    )
+    try:
+        return await pipeline.process_uploads(
+            db,
+            file_ids=body.file_ids or None,
+            patient_id=body.patient_id,
+            ingest_rag=body.ingest_rag,
+        )
+    except Exception as exc:  # noqa: BLE001
+        # Surface a JSON error (with CORS) instead of a dropped connection.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Analysis failed: {exc}",
+        ) from exc
 
 
 @router.get("/patient", response_model=PatientOverviewResponse)

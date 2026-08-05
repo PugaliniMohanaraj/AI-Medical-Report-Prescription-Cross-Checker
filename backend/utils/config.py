@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     # Embeddings
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_dimension: int = 384
+    # auto | hash | sentence_transformers — use "hash" on Render free (avoids OOM / Network Error)
+    embedding_backend: Literal["auto", "hash", "sentence_transformers"] = "auto"
 
     # Paths (resolved relative to repo root when not absolute)
     upload_dir: str = "backend/uploads"

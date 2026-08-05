@@ -159,13 +159,26 @@ class PatientPipelineService:
             await db.commit()
 
         rag_chunks = 0
-        if ingest_rag and rag_docs:
+        if rag_docs and (
+            ingest_rag
+            or self.settings.app_env == "production"
+            or self.settings.embedding_backend == "hash"
+        ):
             for doc in rag_docs:
                 doc["patient_id"] = resolved_patient_id
             try:
-                ingested = await self._rag_pipeline().ingest(rag_docs)
+                # Hash + memory on hosted free tier — loading sentence-transformers/torch
+                # often OOMs and the browser shows a misleading "Network Error".
+                light = (
+                    self.settings.app_env == "production"
+                    or self.settings.embedding_backend == "hash"
+                    or self.settings.rag_vector_backend == "memory"
+                )
+                rag = RagPipeline(self.settings, force_memory=light)
+                self._rag = rag
+                ingested = await rag.ingest(rag_docs)
                 rag_chunks = int(ingested.get("chunks_indexed") or 0)
-            except RagError as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning("RAG ingest after processing failed: %s", exc)
 
         completed = sum(1 for r in results if r.status == "completed")
