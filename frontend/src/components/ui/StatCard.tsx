@@ -17,13 +17,13 @@ const toneStyles = {
 export function StatCard({ label, value, hint, tone = "default" }: StatCardProps) {
   return (
     <div className={cn("rounded-2xl border px-4 py-4 shadow-sm", toneStyles[tone])}>
-      <p className="text-xs font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
+      <p className="text-sm font-medium uppercase tracking-wide text-surface-500 dark:text-surface-400">
         {label}
       </p>
-      <p className="mt-2 font-display text-3xl font-semibold text-surface-900 dark:text-surface-50">
+      <p className="mt-2 font-display text-4xl font-semibold text-surface-900 dark:text-surface-50">
         {value}
       </p>
-      {hint && <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{hint}</p>}
+      {hint && <p className="mt-1.5 text-sm text-surface-500 dark:text-surface-400">{hint}</p>}
     </div>
   );
 }

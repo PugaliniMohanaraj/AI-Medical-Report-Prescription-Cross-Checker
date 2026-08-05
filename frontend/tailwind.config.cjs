@@ -30,8 +30,18 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['"DM Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ['"Plus Jakarta Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
         display: ['"Fraunces"', "Georgia", "serif"],
+      },
+      fontSize: {
+        xs: ["0.8125rem", { lineHeight: "1.25rem" }],
+        sm: ["0.9375rem", { lineHeight: "1.45rem" }],
+        base: ["1.0625rem", { lineHeight: "1.65rem" }],
+        lg: ["1.1875rem", { lineHeight: "1.75rem" }],
+        xl: ["1.3125rem", { lineHeight: "1.85rem" }],
+        "2xl": ["1.5625rem", { lineHeight: "2rem" }],
+        "3xl": ["1.875rem", { lineHeight: "2.25rem" }],
+        "4xl": ["2.25rem", { lineHeight: "2.6rem" }],
       },
       boxShadow: {
         panel: "0 10px 30px -18px rgba(8, 28, 21, 0.35)",

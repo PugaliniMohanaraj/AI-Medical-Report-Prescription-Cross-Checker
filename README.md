@@ -1,40 +1,43 @@
-# Medical Report & Prescription Cross-Checker
+# MedCross — AI Medical Report & Prescription Cross-Checker
 
-Production-ready **project scaffold** for an AI competition: multi-PDF medical report analysis, prescription conflict detection, lab trends, and RAG follow-up Q&A with confidence scores.
+End-to-end clinical document intelligence for the **YGC AI Competition 2026 (Round 1)**:
+upload multi-visit medical PDFs/images, extract structured data with AI, merge a patient
+timeline, flag prescription conflicts, track lab trends, and ask grounded follow-up questions
+with confidence scores.
 
-> **Scope of this commit:** architecture, configuration, and stubs only. Business logic is intentionally not implemented yet.
+> **Not a medical device.** The app supports clinical review only and must never be treated as a diagnosis.
+
+## What it does
+
+1. **Upload** multiple lab reports, prescriptions, and discharge summaries  
+2. **AI extraction** of medicines, dosages, labs, dates, allergies, and diagnoses  
+3. **Timeline** merge across visits and providers  
+4. **Safety cross-check** — duplicates, dosage conflicts, interactions, allergy risks  
+5. **Lab trends** with plain-language explanations  
+6. **RAG chat** across all ingested documents, with citations + confidence  
 
 ## Tech stack
 
 | Area | Stack |
 |------|--------|
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router, Axios, Recharts |
-| Backend | FastAPI, Pydantic, LangChain, ChromaDB, PyMuPDF, Uvicorn |
-| AI | Llama 3.1 (Ollama) **or** OpenAI — switch via `LLM_PROVIDER` |
-| Embeddings | `BAAI/bge-small-en-v1.5` |
-| Data | SQLite (metadata) · ChromaDB (vectors) |
-| Deploy | Frontend → Vercel · Backend → Render |
+| Backend | FastAPI, Uvicorn, Pydantic, SQLAlchemy + SQLite, PyMuPDF, RapidOCR |
+| AI | Ollama (local) **or** OpenAI — switch via `LLM_PROVIDER` |
+| RAG | LangChain chunking · `BAAI/bge-small-en-v1.5` · ChromaDB (memory fallback) |
+| Deploy | Frontend → Vercel · Backend → Render (Docker) |
 
 ## Repository layout
 
 ```
 ├── frontend/                 # React SPA
-│   ├── src/api/              # Axios client & endpoint helpers
-│   ├── src/components/
-│   ├── src/pages/
-│   ├── src/hooks/
-│   ├── src/types/
-│   └── src/utils/
 ├── backend/
-│   ├── api/                  # Routes & dependencies
-│   ├── models/               # Pydantic schemas + SQLAlchemy
-│   ├── services/             # Domain service stubs
-│   ├── rag/                  # Embeddings, vector store, pipeline stubs
+│   ├── api/                  # Routes
+│   ├── models/               # Schemas + SQLAlchemy
+│   ├── services/             # PDF, extraction, conflicts, labs, pipeline
+│   ├── rag/                  # Embeddings, vector store, Q&A pipeline
 │   ├── utils/                # Settings & LLM factory
-│   ├── uploads/              # PDF storage
-│   ├── tests/
-│   └── main.py               # FastAPI entrypoint
-├── docs/                     # Architecture & API notes
+│   └── main.py
+├── docs/
 ├── docker-compose.yml
 └── README.md
 ```
@@ -44,9 +47,10 @@ See [docs/architecture.md](docs/architecture.md) for layering details.
 ## Prerequisites
 
 - Node.js 20+
-- Python 3.11+ (3.10 also works; 3.13 may lack some AI package wheels on Windows)
-- (Optional) [Ollama](https://ollama.com) with `llama3.1` pulled
+- Python 3.11+ (prefer 3.11–3.12 on Windows)
+- (Optional local) [Ollama](https://ollama.com) with `llama3.1` pulled
 - (Optional) Docker / Docker Compose
+- **Hosted demo:** OpenAI API key (Ollama is not available on Render free tier)
 
 ## Quick start
 
@@ -65,11 +69,9 @@ pip install -r backend/requirements.txt
 copy backend\.env.example backend\.env   # Windows
 # cp backend/.env.example backend/.env   # macOS / Linux
 
-# Optional AI / RAG dependencies (LangChain, ChromaDB, embeddings)
-# Prefer Python 3.11–3.12. On Windows you may need Visual C++ Build Tools.
+# Full AI / RAG stack (recommended for demos)
 # pip install -r backend/requirements-ai.txt
 
-# Run from repo root so `backend` is importable
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -107,13 +109,14 @@ docker compose up --build
 | `LLM_PROVIDER` | `ollama` or `openai` | `ollama` |
 | `OLLAMA_BASE_URL` | Local Ollama endpoint | `http://localhost:11434` |
 | `OLLAMA_MODEL` | Model name | `llama3.1` |
-| `OPENAI_API_KEY` | Required when provider is openai | — |
+| `OPENAI_API_KEY` | **Required** when provider is openai | — |
 | `OPENAI_MODEL` | OpenAI chat model | `gpt-4o-mini` |
+| `CORS_ORIGINS` | Comma-separated allowed origins (no trailing slash) | Vite localhost |
+| `FRONTEND_URL` | Optional; merged into CORS (set to Vercel URL) | — |
 | `EMBEDDING_MODEL` | Sentence-transformers model | `BAAI/bge-small-en-v1.5` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | Vite localhost |
-| `UPLOAD_DIR` | PDF upload directory | `uploads` |
-| `CHROMA_PERSIST_DIR` | Chroma persistence path | `data/chroma` |
-| `SQLITE_DB_PATH` | SQLite metadata path | `data/metadata.db` |
+| `UPLOAD_DIR` | Upload directory | `backend/uploads` |
+| `CHROMA_PERSIST_DIR` | Chroma persistence path | `backend/data/chroma` |
+| `SQLITE_DB_PATH` | SQLite metadata path | `backend/data/metadata.db` |
 
 ### Frontend (`frontend/.env`)
 
@@ -121,20 +124,22 @@ docker compose up --build
 |----------|-------------|
 | `VITE_API_BASE_URL` | Backend API base, e.g. `http://localhost:8000/api/v1` |
 
+**Production:** set `VITE_API_BASE_URL` to `https://<your-render-service>.onrender.com/api/v1` in Vercel **before** building. Vite bakes this at build time.
+
 ## Switching LLM providers
 
 ```env
-# Local Llama 3.1
+# Local
 LLM_PROVIDER=ollama
 OLLAMA_MODEL=llama3.1
 
-# Or OpenAI
+# Cloud / Render
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-Factory: `backend/utils/llm.py` (wiring stubbed until the AI phase).
+Factory: `backend/utils/llm.py`.
 
 ## Tests
 
@@ -144,51 +149,28 @@ pip install -r backend/requirements.txt
 pytest
 ```
 
-## AI dependencies
-
-Core API deps live in `backend/requirements.txt`.  
-Full RAG stack: `backend/requirements-ai.txt` (used by Docker / Render).
-
-```bash
-pip install -r backend/requirements-ai.txt
-```
-
-## Deployment
-
-### Frontend → Vercel
-
-- Root directory: `frontend`
-- Build: `npm run build`
-- Output: `dist`
-- Set `VITE_API_BASE_URL` to your Render API URL (`…/api/v1`)
-
-`frontend/vercel.json` is included for SPA rewrites.
+## Deployment (checklist)
 
 ### Backend → Render
 
-- Use `backend/Dockerfile` **or** native Python with:
-  - Build: `pip install -r backend/requirements.txt`
-  - Start: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-- Set env vars from `backend/.env.example`
-- Persist `uploads` / `data` via a disk if available
+1. Deploy with `backend/Dockerfile` (or `render.yaml` blueprint)
+2. Set `LLM_PROVIDER=openai` and `OPENAI_API_KEY`
+3. Set `CORS_ORIGINS` **or** `FRONTEND_URL` to your exact Vercel origin  
+   (example: `https://medcross.vercel.app` — no trailing slash)
+4. Smoke-test `/api/v1/health`
 
-`render.yaml` blueprint is included as a starting point.
+### Frontend → Vercel
 
-### OCR note
+1. Root directory: `frontend`
+2. Build: `npm run build` · Output: `dist`
+3. Set `VITE_API_BASE_URL=https://<render>/api/v1`
+4. Redeploy after changing the env var
 
-Scanned/image-only pages use PyMuPDF's Tesseract integration (`page.get_textpage_ocr`).
-Install [Tesseract](https://github.com/tesseract-ocr/tesseract) language data and, if needed,
-set `TESSDATA_PATH` in `backend/.env`.
+`frontend/vercel.json` handles SPA rewrites.
 
-### RAG note
+### Pre-demo tip
 
-Core install includes LangChain text splitters. For production ChromaDB + BGE embeddings:
-
-```bash
-pip install -r backend/requirements-ai.txt
-```
-
-Set `RAG_VECTOR_BACKEND=auto|chroma|memory`. LLM answers use `LLM_PROVIDER=ollama|openai`.
+Render free instances sleep. Wake the API and run one upload→process cycle **before** judges join. Uploads/SQLite may reset on free-tier restarts — re-upload the sample set if needed.
 
 ## License
 

@@ -20,12 +20,12 @@ export function Panel({ title, description, actions, children, className }: Pane
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             {title && (
-              <h2 className="font-display text-lg font-semibold text-surface-900 dark:text-surface-50">
+              <h2 className="font-display text-xl font-semibold text-surface-900 dark:text-surface-50">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mt-1 text-sm text-surface-600 dark:text-surface-300">{description}</p>
+              <p className="mt-1.5 text-base text-surface-600 dark:text-surface-300">{description}</p>
             )}
           </div>
           {actions}

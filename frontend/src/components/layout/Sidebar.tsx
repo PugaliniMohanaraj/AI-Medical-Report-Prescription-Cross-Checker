@@ -46,15 +46,15 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             <IconShield className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="font-display text-xl font-semibold tracking-tight">MedCross</p>
-            <p className="text-[11px] text-white/55">Clinical intelligence</p>
+            <p className="font-display text-2xl font-semibold tracking-tight">MedCross</p>
+            <p className="text-xs text-white/55">Clinical intelligence</p>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
         <div className="space-y-1">
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
             Clinical
           </p>
           {primaryNav.map((item) => (
@@ -62,7 +62,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           ))}
         </div>
         <div className="space-y-1">
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
             System
           </p>
           {secondaryNav.map((item) => (
@@ -76,14 +76,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500/30">
             <IconShield className="h-4 w-4 text-brand-100" />
           </div>
-          <p className="text-sm font-semibold">Your health, our priority</p>
-          <p className="mt-1 text-xs leading-relaxed text-white/60">
+          <p className="text-base font-semibold">Your health, our priority</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-white/65">
             Cross-check reports, medicines, and labs with confidence.
           </p>
           <Link
             to="/chat"
             onClick={onNavigate}
-            className="mt-3 inline-flex rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
+            className="mt-3 inline-flex rounded-xl bg-brand-500 px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
           >
             Learn more
           </Link>
@@ -92,12 +92,12 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <button
           type="button"
           onClick={toggleTheme}
-          className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
+          className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 text-sm font-medium text-white/85 transition hover:bg-white/10"
         >
           <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
           {theme === "dark" ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
         </button>
-        <p className="px-1 text-[10px] text-white/35">© {new Date().getFullYear()} MedCross</p>
+        <p className="px-1 text-xs text-white/40">© {new Date().getFullYear()} MedCross</p>
       </div>
     </div>
   );
@@ -120,14 +120,14 @@ function SideLink({
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all",
+          "flex items-center gap-3 rounded-2xl px-3.5 py-3 text-base font-medium transition-all",
           isActive
             ? "bg-brand-500 text-white shadow-lg shadow-brand-500/25"
-            : "text-white/65 hover:bg-white/8 hover:text-white",
+            : "text-white/70 hover:bg-white/8 hover:text-white",
         )
       }
     >
-      <Icon className="shrink-0 opacity-90" />
+      <Icon className="h-5 w-5 shrink-0 opacity-90" />
       <span>{label}</span>
     </NavLink>
   );
