@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     # CORS (comma-separated). Also merges FRONTEND_URL when set (hosted Vercel origin).
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     frontend_url: str = ""
+    # Regex for preview/production Vercel hosts (avoids Network Error when env not set yet)
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
 
     # LLM
     llm_provider: Literal["ollama", "openai"] = "ollama"
