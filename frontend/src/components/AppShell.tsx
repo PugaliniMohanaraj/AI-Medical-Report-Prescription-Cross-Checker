@@ -20,6 +20,7 @@ const pageCaptions: Record<string, string> = {
   "/medicines": "Review regimen details and safety checks.",
   "/labs": "Track markers and abnormal trends over time.",
   "/warnings": "Prioritized prescription and allergy alerts.",
+  "/doctors": "Find a real nearby doctor from public map listings.",
   "/chat": "Ask follow-up questions with cited sources.",
   "/settings": "Appearance, API status, and workspace preferences.",
   "/uploads": "Ingest PDF and image medical reports securely.",

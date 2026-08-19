@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { AiChatPage } from "@/pages/AiChatPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { FindDoctorPage } from "@/pages/FindDoctorPage";
 import { LabTrendsPage } from "@/pages/LabTrendsPage";
 import { MedicinesPage } from "@/pages/MedicinesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/medicines" element={<MedicinesPage />} />
         <Route path="/labs" element={<LabTrendsPage />} />
         <Route path="/warnings" element={<WarningsPage />} />
+        <Route path="/doctors" element={<FindDoctorPage />} />
         <Route path="/chat" element={<AiChatPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/uploads" element={<UploadPage />} />

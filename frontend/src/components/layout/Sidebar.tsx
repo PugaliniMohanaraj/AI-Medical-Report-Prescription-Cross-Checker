@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
   IconChat,
   IconDashboard,
+  IconDoctor,
   IconLabs,
   IconMoon,
   IconPill,
@@ -23,6 +24,7 @@ const primaryNav = [
   { to: "/medicines", label: "Medicines", icon: IconPill },
   { to: "/labs", label: "Lab Trends", icon: IconLabs },
   { to: "/warnings", label: "Warnings", icon: IconWarning },
+  { to: "/doctors", label: "Find doctor", icon: IconDoctor },
   { to: "/chat", label: "AI Chat", icon: IconChat },
 ];
 

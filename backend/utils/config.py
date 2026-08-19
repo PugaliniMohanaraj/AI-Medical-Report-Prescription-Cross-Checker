@@ -80,7 +80,8 @@ class Settings(BaseSettings):
     rag_vector_backend: Literal["auto", "chroma", "memory"] = "auto"
     rag_chunk_size: int = 800
     rag_chunk_overlap: int = 120
-    rag_default_top_k: int = 5
+    # Local doctor search (optional Google Places; OSM is the default free source)
+    google_places_api_key: str = ""
 
     @property
     def cors_origin_list(self) -> List[str]:
