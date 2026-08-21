@@ -24,6 +24,7 @@ USER_AGENT = "MedCross-YGC/1.0 (medical-report-cross-checker; student-project)"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OVERPASS_URLS = (
     "https://overpass-api.de/api/interpreter",
+    "https://lz4.overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
 )
 
@@ -245,8 +246,11 @@ class DoctorService:
                     availability=payload.availability,
                     source=source,
                     no_results=True,
-                    message="The public map search is temporarily unavailable. Please try again shortly.",
-                    suggestion="Retry in a minute, or widen the search radius.",
+                    message=(
+                        "The OpenStreetMap clinic search (Overpass) failed or timed out. "
+                        "This is usually a temporary public-API issue, not a problem with your location."
+                    ),
+                    suggestion="Wait ~30–60s and search again. Optional: set GOOGLE_PLACES_API_KEY for a more stable source.",
                     disclaimer=disclaimer,
                 )
 
