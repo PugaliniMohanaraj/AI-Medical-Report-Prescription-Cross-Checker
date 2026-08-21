@@ -2,6 +2,9 @@
 
 This is a competition-oriented knowledge base of common clinical patterns,
 not a substitute for a full clinical decision-support system.
+
+Extended for MedCross v2: added common Indian generics, additional interactions,
+and broader class-level rules.
 """
 
 from __future__ import annotations
@@ -66,6 +69,65 @@ DRUG_ALIASES: dict[str, set[str]] = {
     "codeine": set(),
     "sulfadiazine": set(),
     "sulfasalazine": set(),
+    # Common Indian-market / generic additions
+    "azithromycin": {"zithromax", "azee", "azithral"},
+    "doxycycline": {"doxy", "doxt"},
+    "metronidazole": {"flagyl", "metro"},
+    "ceftriaxone": {"rocephin"},
+    "cefixime": {"taxim", "cefspan"},
+    "amikacin": set(),
+    "gentamicin": set(),
+    "vancomycin": set(),
+    "glipizide": {"glucotrol"},
+    "glimepiride": {"amaryl"},
+    "glibenclamide": {"glyburide", "daonil"},
+    "sitagliptin": {"januvia"},
+    "vildagliptin": {"galvus"},
+    "empagliflozin": {"jardiance"},
+    "dapagliflozin": {"forxiga", "farxiga"},
+    "amlodipine": {"norvasc", "stamlo"},
+    "nifedipine": {"adalat"},
+    "verapamil": {"calan"},
+    "diltiazem": {"cardizem"},
+    "atenolol": {"tenormin", "aten"},
+    "bisoprolol": {"concor", "biselect"},
+    "carvedilol": {"coreg"},
+    "furosemide": {"lasix", "frusemide"},
+    "hydrochlorothiazide": {"hctz"},
+    "torsemide": {"dytor"},
+    "chlorthalidone": set(),
+    "levothyroxine": {"eltroxin", "thyrox", "synthroid"},
+    "carbimazole": set(),
+    "prednisolone": {"omnacortil"},
+    "dexamethasone": {"decadron"},
+    "montelukast": {"singulair", "montair"},
+    "salbutamol": {"albuterol", "asthalin"},
+    "budesonide": {"pulmicort"},
+    "cetirizine": {"zyrtec"},
+    "fexofenadine": {"allegra"},
+    "loratadine": {"claritin"},
+    "alprazolam": {"xanax"},
+    "diazepam": {"valium"},
+    "zolpidem": {"ambien"},
+    "gabapentin": {"neurontin"},
+    "pregabalin": {"lyrica"},
+    "phenytoin": {"dilantin"},
+    "carbamazepine": {"tegretol"},
+    "valproate": {"depakote", "sodium valproate", "valproic acid"},
+    "levetiracetam": {"keppra"},
+    "donepezil": {"aricept"},
+    "risperidone": {"risperdal"},
+    "olanzapine": {"zyprexa"},
+    "ondansetron": {"zofran"},
+    "domperidone": {"motilium"},
+    "rabeprazole": {"aciphex", "razo"},
+    "esomeprazole": {"nexium"},
+    "ranitidine": {"zantac"},
+    "calcium": {"calcium carbonate", "calcirol", "shelcal"},
+    "vitamin d": {"cholecalciferol", "calciferol"},
+    "iron": {"ferrous sulphate", "ferrous sulfate", "fefol"},
+    "folic acid": {"folate"},
+    "vitamin b12": {"cyanocobalamin", "mecobalamin"},
 }
 
 # Allergy label/canonical drug -> related drugs that may cross-react
@@ -226,6 +288,79 @@ KNOWN_INTERACTIONS: dict[frozenset[str], tuple[str, str]] = {
         "Low",
         "Prolonged high-dose paracetamol/acetaminophen may modestly increase INR in patients on warfarin; short courses are usually lower risk.",
     ),
+    # ── Additional interactions ────────────────────────────────────────────
+    frozenset({"azithromycin", "warfarin"}): (
+        "Medium",
+        "Azithromycin can potentiate warfarin; INR should be monitored during and after the antibiotic course.",
+    ),
+    frozenset({"azithromycin", "amiodarone"}): (
+        "High",
+        "Both azithromycin and amiodarone prolong the QT interval; combination increases risk of life-threatening arrhythmia (Torsades de Pointes).",
+    ),
+    frozenset({"ciprofloxacin", "amiodarone"}): (
+        "High",
+        "Fluoroquinolones with amiodarone can cause additive QT prolongation and increase arrhythmia risk.",
+    ),
+    frozenset({"carbamazepine", "warfarin"}): (
+        "High",
+        "Carbamazepine is a strong CYP3A4 inducer that reduces warfarin levels; anticoagulation may become sub-therapeutic.",
+    ),
+    frozenset({"phenytoin", "warfarin"}): (
+        "High",
+        "Phenytoin can both inhibit and induce warfarin metabolism; INR is unpredictable and requires close monitoring.",
+    ),
+    frozenset({"valproate", "aspirin"}): (
+        "Medium",
+        "Aspirin can displace valproate from protein binding and inhibit its metabolism, potentially raising valproate levels and toxicity risk.",
+    ),
+    frozenset({"metformin", "contrast"}): (
+        "Medium",
+        "Iodinated contrast media can cause acute kidney injury, impairing metformin excretion and raising lactic acidosis risk. Metformin is typically held 48 h around contrast procedures.",
+    ),
+    frozenset({"furosemide", "gentamicin"}): (
+        "High",
+        "Loop diuretics combined with aminoglycosides increase ototoxicity and nephrotoxicity risk synergistically.",
+    ),
+    frozenset({"furosemide", "amikacin"}): (
+        "High",
+        "Loop diuretics with aminoglycosides increase ototoxicity and nephrotoxicity risk.",
+    ),
+    frozenset({"furosemide", "digoxin"}): (
+        "High",
+        "Furosemide-induced hypokalemia potentiates digoxin toxicity; electrolytes should be monitored.",
+    ),
+    frozenset({"levothyroxine", "calcium"}): (
+        "Medium",
+        "Calcium supplements can bind levothyroxine in the GI tract, reducing absorption. Separate doses by at least 4 hours.",
+    ),
+    frozenset({"levothyroxine", "iron"}): (
+        "Medium",
+        "Iron preparations impair levothyroxine absorption. Separate doses by at least 4 hours.",
+    ),
+    frozenset({"sildenafil", "amlodipine"}): (
+        "Low",
+        "Additive vasodilatory effect may cause mild blood pressure lowering; monitor for hypotension.",
+    ),
+    frozenset({"metoprolol", "verapamil"}): (
+        "High",
+        "Beta-blocker combined with non-dihydropyridine calcium channel blocker can cause profound bradycardia, heart block, or cardiac arrest.",
+    ),
+    frozenset({"atenolol", "verapamil"}): (
+        "High",
+        "Beta-blocker combined with verapamil can cause dangerous bradycardia or AV block.",
+    ),
+    frozenset({"sertraline", "alprazolam"}): (
+        "Low",
+        "SSRIs may modestly increase benzodiazepine levels via CYP inhibition; monitor for excess sedation.",
+    ),
+    frozenset({"prednisone", "warfarin"}): (
+        "Medium",
+        "Corticosteroids can unpredictably alter INR in patients on warfarin; closer monitoring is advised.",
+    ),
+    frozenset({"prednisolone", "warfarin"}): (
+        "Medium",
+        "Corticosteroids can unpredictably alter INR in patients on warfarin; closer monitoring is advised.",
+    ),
 }
 
 # Class-level interaction helpers (any member of set A with any member of set B)
@@ -248,5 +383,23 @@ CLASS_INTERACTIONS: list[tuple[set[str], set[str], str, str]] = [
         {"ibuprofen", "naproxen", "diclofenac", "aspirin"},
         "High",
         "Warfarin with antiplatelet/NSAID therapy significantly elevates bleeding risk.",
+    ),
+    (
+        {"morphine", "oxycodone", "codeine", "hydrocodone", "tramadol"},
+        {"alprazolam", "diazepam", "zolpidem"},
+        "High",
+        "Opioids combined with benzodiazepines or sedative-hypnotics can cause profound CNS/respiratory depression and death.",
+    ),
+    (
+        {"azithromycin", "ciprofloxacin", "levofloxacin"},
+        {"amiodarone"},
+        "High",
+        "QT-prolonging antibiotics with amiodarone create additive QT prolongation risk and potential for fatal arrhythmia.",
+    ),
+    (
+        {"metoprolol", "atenolol", "bisoprolol", "carvedilol"},
+        {"verapamil", "diltiazem"},
+        "High",
+        "Beta-blockers with rate-limiting calcium channel blockers (verapamil/diltiazem) can cause severe bradycardia, AV block, or cardiac arrest.",
     ),
 ]

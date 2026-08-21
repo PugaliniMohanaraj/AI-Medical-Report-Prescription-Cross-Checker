@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -37,7 +38,9 @@ Return ONLY a single JSON object (no markdown, no commentary) with exactly these
       "name": string | null,
       "dosage": string | null,
       "frequency": string | null,
-      "duration": string | null
+      "duration": string | null,
+      "route": string | null,
+      "medicine_type": string | null
     }
   ],
   "allergies": string[],
@@ -61,9 +64,12 @@ Return ONLY a single JSON object (no markdown, no commentary) with exactly these
 
 Rules:
 - Put each medicine's dosage, frequency, and duration on that medicine object.
+- route: administration route e.g. oral, IV, topical, sublingual (null if not stated).
+- medicine_type: tablet, capsule, syrup, injection, patch, inhaler, drops (null if not stated).
 - diagnosis and allergies are arrays of strings.
 - visit_date should keep the date as written in the source when possible (ISO 8601 preferred).
 - vital_signs examples: Blood Pressure, Heart Rate, Temperature, SpO2, Respiratory Rate, Weight, Height.
+- If the text contains multiple visits or doctors, extract the most recent or primary one.
 """
 
 
@@ -93,16 +99,7 @@ class ExtractionService:
             f"--- BEGIN MEDICAL TEXT ---\n{cleaned}\n--- END MEDICAL TEXT ---"
         )
 
-        try:
-            raw = await self.llm.complete(
-                system_prompt=SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                json_mode=True,
-                temperature=self.settings.llm_temperature,
-                max_tokens=self.settings.llm_max_tokens,
-            )
-        except LLMError as exc:
-            raise ExtractionError(str(exc)) from exc
+        raw = await self._complete_with_retry(user_prompt)
 
         try:
             payload = self._parse_json(raw)
@@ -120,6 +117,29 @@ class ExtractionService:
             llm_provider=self.llm.provider_name,
             source="text",
         )
+
+    async def _complete_with_retry(self, user_prompt: str, max_attempts: int = 3) -> str:
+        """Call LLM with exponential-backoff retry on transient errors."""
+        last_exc: Exception | None = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return await self.llm.complete(
+                    system_prompt=SYSTEM_PROMPT,
+                    user_prompt=user_prompt,
+                    json_mode=True,
+                    temperature=self.settings.llm_temperature,
+                    max_tokens=self.settings.llm_max_tokens,
+                )
+            except LLMError as exc:
+                last_exc = exc
+                if attempt < max_attempts:
+                    wait = 2 ** (attempt - 1)  # 1s, 2s
+                    logger.warning(
+                        "LLM attempt %d/%d failed (%s); retrying in %ds.",
+                        attempt, max_attempts, exc, wait,
+                    )
+                    await asyncio.sleep(wait)
+        raise ExtractionError(str(last_exc)) from last_exc
 
     async def to_structured_json(self, text: str) -> dict[str, Any]:
         """Compatibility helper returning a plain dict."""
