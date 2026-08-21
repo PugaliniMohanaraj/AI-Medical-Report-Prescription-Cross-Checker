@@ -408,3 +408,64 @@ class RagIngestResponse(BaseModel):
     backend: str
     embedding_backend: str
     message: str = "Documents ingested"
+
+
+# ---------------------------------------------------------------------------
+# Local doctor recommendation (Final Round)
+# ---------------------------------------------------------------------------
+
+
+class FlagInput(BaseModel):
+    type: Optional[str] = None
+    severity: Optional[str] = None
+    title: Optional[str] = None
+    explanation: Optional[str] = None
+    related_medicines: List[str] = Field(default_factory=list)
+
+
+class DoctorRecommendRequest(BaseModel):
+    location: str = Field(..., min_length=2, max_length=200, description="City or area")
+    availability: str = Field(
+        default="anytime",
+        description="anytime | this_week | evenings | weekends",
+    )
+    radius_km: float = Field(default=8.0, ge=1.0, le=50.0)
+    flags: List[FlagInput] = Field(default_factory=list)
+    diagnosis: List[str] = Field(default_factory=list)
+    primary_diagnosis: Optional[str] = None
+    abnormal_labs: List[str] = Field(default_factory=list)
+
+
+class DoctorResult(BaseModel):
+    name: str
+    specialty: str
+    address: str
+    distance_km: Optional[float] = None
+    phone: Optional[str] = None
+    rating: Optional[float] = None
+    opening_hours: Optional[str] = None
+    maps_url: Optional[str] = None
+    source: str
+    osm_id: Optional[str] = None
+    matches_availability: bool = False
+
+
+class DoctorRecommendResponse(BaseModel):
+    recommended_specialty: str
+    specialty_reason: str
+    location_query: str
+    location_resolved: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    radius_km: float
+    availability: str
+    source: str
+    results: List[DoctorResult] = Field(default_factory=list)
+    count: int = 0
+    no_results: bool = False
+    message: str = ""
+    suggestion: Optional[str] = None
+    disclaimer: str = (
+        "This is not a diagnosis. These listings come from public map data. "
+        "Confirm availability and consult a licensed doctor or pharmacist."
+    )

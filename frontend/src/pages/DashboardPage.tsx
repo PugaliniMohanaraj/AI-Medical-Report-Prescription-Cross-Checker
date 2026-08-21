@@ -14,6 +14,7 @@ import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import {
   IconChat,
   IconChevron,
+  IconDoctor,
   IconLabs,
   IconPill,
   IconShield,
@@ -27,6 +28,7 @@ const quickActions = [
   { to: "/timeline", label: "Review timeline", icon: IconTimeline, tone: "bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100" },
   { to: "/labs", label: "Open lab trends", icon: IconLabs, tone: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200" },
   { to: "/warnings", label: "Review warnings", icon: IconWarning, tone: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200" },
+  { to: "/doctors", label: "Find a doctor", icon: IconDoctor, tone: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-200" },
   { to: "/medicines", label: "Check medicines", icon: IconPill, tone: "bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-200" },
 ];
 
@@ -209,6 +211,11 @@ export function DashboardPage() {
             <Link to="/chat" className="btn-primary mt-4 inline-flex items-center gap-2">
               <IconChat className="h-4 w-4" /> Open chat
             </Link>
+            {highWarnings > 0 && (
+              <Link to="/doctors" className="btn-secondary mt-3 inline-flex w-full justify-center">
+                Find a nearby doctor
+              </Link>
+            )}
           </section>
         </div>
       </div>

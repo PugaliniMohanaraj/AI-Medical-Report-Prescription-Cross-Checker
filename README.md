@@ -1,9 +1,9 @@
 # MedCross — AI Medical Report & Prescription Cross-Checker
 
-End-to-end clinical document intelligence for the **YGC AI Competition 2026 (Round 1)**:
+End-to-end clinical document intelligence for the **YGC AI Competition 2026**:
 upload multi-visit medical PDFs/images, extract structured data with AI, merge a patient
-timeline, flag prescription conflicts, track lab trends, and ask grounded follow-up questions
-with confidence scores.
+timeline, flag prescription conflicts, track lab trends, ask grounded follow-up questions,
+and **recommend a real local doctor** when a high-risk or low-confidence flag appears.
 
 > **Not a medical device.** The app supports clinical review only and must never be treated as a diagnosis.
 
@@ -15,6 +15,9 @@ with confidence scores.
 4. **Safety cross-check** — duplicates, dosage conflicts, interactions, allergy risks  
 5. **Lab trends** with plain-language explanations  
 6. **RAG chat** across all ingested documents, with citations + confidence  
+7. **Local doctor recommendation** — maps the flag to a specialty, asks city + availability, then searches **real** public listings (OpenStreetMap; optional Google Places)  
+
+No doctor/clinic names are invented. If the map search finds nothing, the UI says so and suggests widening the radius. 
 
 ## Tech stack
 
@@ -117,6 +120,7 @@ docker compose up --build
 | `UPLOAD_DIR` | Upload directory | `backend/uploads` |
 | `CHROMA_PERSIST_DIR` | Chroma persistence path | `backend/data/chroma` |
 | `SQLITE_DB_PATH` | SQLite metadata path | `backend/data/metadata.db` |
+| `GOOGLE_PLACES_API_KEY` | Optional. If empty, doctor search uses OpenStreetMap | — |
 
 ### Frontend (`frontend/.env`)
 
@@ -140,6 +144,17 @@ OPENAI_MODEL=gpt-4o-mini
 ```
 
 Factory: `backend/utils/llm.py`.
+
+## Local doctor recommendation (Final Round)
+
+Flow: **flag detected → ask city + availability → public map search → result list**.
+
+- **API used (default):** [Nominatim](https://nominatim.openstreetmap.org/) to geocode the city, then [Overpass API](https://overpass-api.de/) to list nearby hospitals, clinics, doctors, and pharmacies from **OpenStreetMap**.
+- **Optional:** set `GOOGLE_PLACES_API_KEY` to use Google Places Nearby Search instead. If Google fails or returns zero places, the app falls back to OSM or shows a clear “no results” message — it never fills in fake clinics.
+- **Specialty mapping:** e.g. HbA1c / diabetes → endocrinologist; LDL / hypertension → cardiologist; drug interaction or duplicate → pharmacist; allergy conflict → allergist; otherwise a GP/clinic.
+- **Availability:** used to prefer OSM `opening_hours` that match evenings/weekends when that tag exists.
+
+Endpoint: `POST /api/v1/doctors/recommend`
 
 ## Tests
 

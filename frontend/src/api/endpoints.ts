@@ -1,5 +1,7 @@
 import { apiClient, type UploadProgressHandler } from "@/api/client";
 import type {
+  DoctorRecommendRequest,
+  DoctorRecommendResponse,
   HealthResponse,
   LabTrendRequest,
   LabTrendResponse,
@@ -97,5 +99,14 @@ export async function ingestRagDocuments(payload: RagIngestRequest): Promise<Rag
 
 export async function queryRag(payload: RagQueryRequest): Promise<RagQueryResponse> {
   const { data } = await apiClient.post<RagQueryResponse>("/rag/query", payload);
+  return data;
+}
+
+export async function recommendDoctors(
+  payload: DoctorRecommendRequest,
+): Promise<DoctorRecommendResponse> {
+  const { data } = await apiClient.post<DoctorRecommendResponse>("/doctors/recommend", payload, {
+    timeout: 45000,
+  });
   return data;
 }

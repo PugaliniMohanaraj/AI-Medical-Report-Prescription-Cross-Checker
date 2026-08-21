@@ -66,7 +66,10 @@ export function WarningsPage() {
       <MedicalDisclaimer text={overview?.disclaimer} />
       {highRisk && (
         <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100">
-          High-risk findings detected. Consult a doctor or pharmacist before changing any medicines.
+          <p>High-risk findings detected. This is not a diagnosis — consult a doctor or pharmacist.</p>
+          <Link to="/doctors" className="btn-primary mt-3 inline-flex">
+            Find a nearby doctor
+          </Link>
         </div>
       )}
 
@@ -121,6 +124,11 @@ export function WarningsPage() {
                   <p className="mt-3 text-xs text-surface-500">
                     Medicines: {finding.related_medicines.join(", ")}
                   </p>
+                )}
+                {(finding.severity === "High" || (finding.confidence?.score ?? 1) < 0.45) && (
+                  <Link to="/doctors" className="mt-3 inline-flex text-sm font-semibold text-brand-600 underline">
+                    Find a local doctor for this flag
+                  </Link>
                 )}
               </article>
             ))}

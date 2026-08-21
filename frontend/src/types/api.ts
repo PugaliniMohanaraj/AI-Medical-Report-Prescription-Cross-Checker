@@ -271,3 +271,53 @@ export interface PatientOverviewResponse {
   has_extractions: boolean;
   disclaimer: string;
 }
+
+export interface DoctorFlagInput {
+  type?: string | null;
+  severity?: string | null;
+  title?: string | null;
+  explanation?: string | null;
+  related_medicines?: string[];
+}
+
+export interface DoctorRecommendRequest {
+  location: string;
+  availability?: string;
+  radius_km?: number;
+  flags?: DoctorFlagInput[];
+  diagnosis?: string[];
+  primary_diagnosis?: string | null;
+  abnormal_labs?: string[];
+}
+
+export interface DoctorResult {
+  name: string;
+  specialty: string;
+  address: string;
+  distance_km?: number | null;
+  phone?: string | null;
+  rating?: number | null;
+  opening_hours?: string | null;
+  maps_url?: string | null;
+  source: string;
+  osm_id?: string | null;
+  matches_availability: boolean;
+}
+
+export interface DoctorRecommendResponse {
+  recommended_specialty: string;
+  specialty_reason: string;
+  location_query: string;
+  location_resolved?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  radius_km: number;
+  availability: string;
+  source: string;
+  results: DoctorResult[];
+  count: number;
+  no_results: boolean;
+  message: string;
+  suggestion?: string | null;
+  disclaimer: string;
+}

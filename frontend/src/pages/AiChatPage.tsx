@@ -115,9 +115,12 @@ export function AiChatPage() {
             <div className="space-y-4">
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{result.answer}</p>
               {lowConfidence && (
-                <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-                  Low confidence answer. Consult a doctor or pharmacist before acting on this.
-                </p>
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                  <p>Low confidence answer. This is not a diagnosis — consult a doctor or pharmacist.</p>
+                  <Link to="/doctors" className="mt-2 inline-flex font-semibold underline">
+                    Find a nearby doctor
+                  </Link>
+                </div>
               )}
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-surface-500">Sources</p>
